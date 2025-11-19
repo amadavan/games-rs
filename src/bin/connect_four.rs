@@ -1,12 +1,12 @@
 use games_rs::connect_four::{
-    agents::player_agent::PlayerAgent,
+    agents::{player_agent::PlayerAgent, random_agent::RandomAgent},
     board::{Board, BoardStatus, Token},
     play_game,
 };
 
 pub fn main() {
     let ai_player1 = PlayerAgent::new(Token::Red);
-    let ai_player2 = PlayerAgent::new(Token::Yellow);
+    let ai_player2 = RandomAgent::new(Token::Yellow);
 
     let result = play_game(&ai_player1, &ai_player2);
 
