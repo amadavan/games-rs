@@ -3,7 +3,12 @@ name = "games-rs"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["macros"]
+resolver = "2"
+
 [dependencies]
+macros = { path = "macros" }
 bincode = "2.0.1"
 rand = "0.9.2"
 serde = { version = "1.0.228", features = ["derive"] }
