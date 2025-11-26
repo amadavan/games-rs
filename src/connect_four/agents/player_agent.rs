@@ -1,7 +1,10 @@
-use crate::connect_four::{agents::Agent, board::{Board, Token}};
+use crate::connect_four::{
+    agents::Agent,
+    board::{Board, Token},
+};
 
 pub struct PlayerAgent {
-  pub token: Token,
+    pub token: Token,
 }
 
 impl PlayerAgent {
@@ -11,7 +14,7 @@ impl PlayerAgent {
 }
 
 impl Agent for PlayerAgent {
-    fn get_move(&self, board: &Board) -> usize {
+    fn get_move(&self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
         let mut mv = None;
 
         // Simple strategy: choose the first available column

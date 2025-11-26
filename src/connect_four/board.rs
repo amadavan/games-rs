@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum Token {
     Empty,
     Red,
@@ -14,6 +14,7 @@ pub enum BoardStatus {
     Win(Token),
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Board {
     grid: [[Token; 7]; 6],
 }
@@ -80,11 +81,14 @@ impl Board {
         }
 
         // Check for draw
-        if self.grid.iter().all(|row| row.iter().all(|&cell| cell != Token::Empty)) {
+        if self
+            .grid
+            .iter()
+            .all(|row| row.iter().all(|&cell| cell != Token::Empty))
+        {
             status = BoardStatus::Draw;
         }
 
-        
         status
     }
 
@@ -118,6 +122,12 @@ impl Board {
         }
 
         Err("Column is full".to_string())
+    }
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -1,9 +1,9 @@
+use super::Agent;
 use crate::connect_four::board::{Board, Token};
 use rand::Rng;
-use super::Agent;
 
 pub struct RandomAgent {
-  pub token: Token,
+    pub token: Token,
 }
 
 impl RandomAgent {
@@ -13,7 +13,7 @@ impl RandomAgent {
 }
 
 impl Agent for RandomAgent {
-    fn get_move(&self, board: &Board) -> usize {
+    fn get_move(&self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
         let mut rng = rand::rng();
         let mut col = rng.random_range(0..7);
 
