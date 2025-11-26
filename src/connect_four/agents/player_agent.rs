@@ -3,6 +3,7 @@ use crate::connect_four::{
     board::{Board, BoardStatus, Token},
 };
 
+#[derive(Clone)]
 pub struct PlayerAgent {
     pub token: Token,
 }

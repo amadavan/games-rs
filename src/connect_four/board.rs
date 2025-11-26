@@ -9,7 +9,7 @@ pub enum Token {
     Yellow,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
 pub enum BoardStatus {
     InProgress,
     Draw,

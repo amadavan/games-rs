@@ -56,7 +56,7 @@ impl<'a> Agent for MonteCarloGraphSearch<'a> {
                 let w = (v2.0 + 1) as f64;
                 let n = (v2.1 + 1) as f64;
                 let N = (v1.1 + 1) as f64;
-                (i, w / n + (2.0 * (N.ln() / n).sqrt()))
+                (i, w / n + (2.0 * N.ln() / n).sqrt())
             })
             .collect::<Vec<_>>();
 

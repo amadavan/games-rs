@@ -2,6 +2,7 @@ use super::Agent;
 use crate::connect_four::board::{Board, Token};
 use rand::Rng;
 
+#[derive(Clone)]
 pub struct RandomAgent {
     pub token: Token,
 }

@@ -1,5 +1,6 @@
 use games_rs::{
     algorithms::monte_carlo_graph::MonteCarloGraph,
+    common::filesystem,
     connect_four::{
         agents::{
             Agent, mcgs_agent::MonteCarloGraphSearch, player_agent::PlayerAgent,
@@ -11,21 +12,27 @@ use games_rs::{
 };
 
 pub fn main() {
-    // let mut ai_player1 = PlayerAgent::new(Token::Red);
-    let mut ai_player1 = RandomAgent::new(Token::Yellow);
+    // Load or create Monte Carlo Graph
+    let path = filesystem::get_data_dir().join("connect_four_mcg.bin");
+    let path_str = path.as_os_str().to_str().unwrap();
+    let mut mcg = if path.exists() {
+        MonteCarloGraph::from_file(path_str).unwrap()
+    } else {
+        MonteCarloGraph::new()
+    };
 
-    let mut mcg = MonteCarloGraph::new();
+    // Create agents
+    let mut ai_player1 = RandomAgent::new(Token::Yellow);
     let mut ai_player2 = MonteCarloGraphSearch::new(Token::Red, &mut mcg);
 
-    for _ in 0..100000 {
-        let (result, moves) = play_game(&mut ai_player1, &mut ai_player2);
-        ai_player1.notify_win(&moves, result.clone());
-        ai_player2.notify_win(&moves, result.clone());
+    // Play the actual game
+    let (result, moves) = play_game(&mut ai_player1, &mut ai_player2);
+    ai_player1.notify_win(&moves, result.clone());
+    ai_player2.notify_win(&moves, result.clone());
 
-        match result {
-            BoardStatus::Win(player) => println!("Player {:?} wins!", player),
-            BoardStatus::Draw => println!("The game is a draw!"),
-            BoardStatus::InProgress => println!("The game is still in progress!"),
-        }
+    match result {
+        BoardStatus::Win(player) => println!("Player {:?} wins!", player),
+        BoardStatus::Draw => println!("The game is a draw!"),
+        BoardStatus::InProgress => println!("The game is still in progress!"),
     }
 }
