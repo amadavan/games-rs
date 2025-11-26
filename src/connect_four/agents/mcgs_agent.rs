@@ -49,11 +49,14 @@ impl<'a> Agent for MonteCarloGraphSearch<'a> {
                     .graph_data
                     .edge_weight(board.clone(), next_board.clone())
                     .unwrap();
-                if edge.1 == 0 {
-                    (i, f64::INFINITY)
-                } else {
-                    (i, edge.0 as f64 / edge.1 as f64)
-                }
+                let v1 = self.graph_data.get_node_aggregate_values(&board.clone());
+                let v2 = self
+                    .graph_data
+                    .get_node_aggregate_values(&next_board.clone());
+                let w = (v2.0 + 1) as f64;
+                let n = (v2.1 + 1) as f64;
+                let N = (v1.1 + 1) as f64;
+                (i, w / n + (2.0 * (N.ln() / n).sqrt()))
             })
             .collect::<Vec<_>>();
 
