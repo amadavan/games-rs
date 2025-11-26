@@ -13,7 +13,7 @@ impl RandomAgent {
 }
 
 impl Agent for RandomAgent {
-    fn get_move(&self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
+    fn get_move(&mut self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
         let mut rng = rand::rng();
         let mut col = rng.random_range(0..7);
 
@@ -22,5 +22,13 @@ impl Agent for RandomAgent {
         }
 
         col
+    }
+
+    fn notify_win(
+        &mut self,
+        _moves: &Vec<(Token, Board)>,
+        _status: crate::connect_four::board::BoardStatus,
+    ) -> () {
+        // RandomAgent does not need to do anything on win notification
     }
 }

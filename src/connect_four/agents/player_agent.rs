@@ -1,6 +1,6 @@
 use crate::connect_four::{
     agents::Agent,
-    board::{Board, Token},
+    board::{Board, BoardStatus, Token},
 };
 
 pub struct PlayerAgent {
@@ -14,7 +14,7 @@ impl PlayerAgent {
 }
 
 impl Agent for PlayerAgent {
-    fn get_move(&self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
+    fn get_move(&mut self, board: &Board, _prev_moves: &Vec<(Token, Board)>) -> usize {
         let mut mv = None;
 
         // Simple strategy: choose the first available column
@@ -40,5 +40,9 @@ impl Agent for PlayerAgent {
         }
 
         mv.unwrap()
+    }
+
+    fn notify_win(&mut self, _moves: &Vec<(Token, Board)>, _status: BoardStatus) -> () {
+        // PlayerAgent does not need to do anything on win notification
     }
 }

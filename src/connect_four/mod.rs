@@ -1,13 +1,18 @@
 pub mod agents;
 pub mod board;
 
-pub fn play_game<A1: agents::Agent, A2: agents::Agent>(a1: &A1, a2: &A2) -> board::BoardStatus {
+pub fn play_game<A1: agents::Agent, A2: agents::Agent>(
+    a1: &mut A1,
+    a2: &mut A2,
+) -> (board::BoardStatus, Vec<(board::Token, board::Board)>) {
     let mut board = board::Board::new();
 
     let mut current_player = board::Token::Red;
     let mut moves = Vec::new();
 
     while board.get_status() == board::BoardStatus::InProgress {
+        moves.push((current_player, board.clone()));
+
         let mv = match current_player {
             board::Token::Red => a1.get_move(&board, &moves),
             board::Token::Yellow => a2.get_move(&board, &moves),
@@ -20,8 +25,6 @@ pub fn play_game<A1: agents::Agent, A2: agents::Agent>(a1: &A1, a2: &A2) -> boar
             continue;
         }
 
-        moves.push((current_player, board.clone()));
-
         current_player = match current_player {
             board::Token::Red => board::Token::Yellow,
             board::Token::Yellow => board::Token::Red,
@@ -29,5 +32,5 @@ pub fn play_game<A1: agents::Agent, A2: agents::Agent>(a1: &A1, a2: &A2) -> boar
         };
     }
 
-    board.get_status().clone()
+    (board.get_status().clone(), moves)
 }

@@ -3,10 +3,12 @@ use std::hash::RandomState;
 use petgraph::algo;
 use petgraph::visit::EdgeRef;
 use petgraph::{Direction::Outgoing, prelude::DiGraphMap};
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MonteCarloGraph<N>
 where
-    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default,
+    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default + std::fmt::Debug,
 {
     // Graph structure and methods would be defined here
     graph: DiGraphMap<N, (usize, usize)>,
@@ -15,7 +17,7 @@ where
 
 impl<N> MonteCarloGraph<N>
 where
-    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default,
+    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default + std::fmt::Debug,
 {
     pub fn new() -> Self {
         MonteCarloGraph {
@@ -43,6 +45,10 @@ where
 
     pub fn contains_edge(&self, from: &N, to: &N) -> bool {
         self.graph.contains_edge(*from, *to)
+    }
+
+    pub fn edge_weight(&self, from: N, to: N) -> Option<&(usize, usize)> {
+        self.graph.edge_weight(from, to)
     }
 
     pub fn back_propogate(&mut self, path: Vec<N>, win: bool) {
@@ -84,6 +90,7 @@ where
         )
         .collect::<Vec<_>>();
 
+        // TODO: need to consider draws
         // If it is the current player then we need to update with the number of wins, otherwise with the difference
         for p in paths.iter() {
             for (l, i) in (0..p.len() - 1).enumerate() {
