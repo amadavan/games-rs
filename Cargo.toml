@@ -12,3 +12,4 @@ macros = { path = "macros" }
 bincode = "2.0.1"
 rand = "0.9.2"
 serde = { version = "1.0.228", features = ["derive"] }
+petgraph = { version = "0.8.3", features = ["serde-1"] }
