@@ -3,21 +3,139 @@ use std::hash::RandomState;
 use petgraph::algo;
 use petgraph::visit::EdgeRef;
 use petgraph::{Direction::Outgoing, prelude::DiGraphMap};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MonteCarloGraph<N>
 where
-    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default + std::fmt::Debug,
+    N: std::hash::Hash
+        + Eq
+        + Clone
+        + Copy
+        + Ord
+        + Default
+        + std::fmt::Debug
+        + Serialize
+        + for<'de> Deserialize<'de>,
 {
     // Graph structure and methods would be defined here
     graph: DiGraphMap<N, (usize, usize)>,
     root: N,
 }
 
+impl<N> Serialize for MonteCarloGraph<N>
+where
+    N: std::hash::Hash
+        + Eq
+        + Clone
+        + Copy
+        + Ord
+        + Default
+        + std::fmt::Debug
+        + Serialize
+        + for<'de> Deserialize<'de>,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("MonteCarloGraph", 2)?;
+        state.serialize_field("graph", &self.graph)?;
+        state.serialize_field("root", &self.root)?;
+        state.end()
+    }
+}
+
+impl<'de, N> Deserialize<'de> for MonteCarloGraph<N>
+where
+    N: std::hash::Hash
+        + Eq
+        + Clone
+        + Copy
+        + Ord
+        + Default
+        + std::fmt::Debug
+        + Serialize
+        + for<'de2> Deserialize<'de2>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::{self, MapAccess, Visitor};
+        use std::fmt;
+
+        struct MonteCarloGraphVisitor<N>(std::marker::PhantomData<N>);
+
+        impl<'de, N> Visitor<'de> for MonteCarloGraphVisitor<N>
+        where
+            N: std::hash::Hash
+                + Eq
+                + Clone
+                + Copy
+                + Ord
+                + Default
+                + std::fmt::Debug
+                + Serialize
+                + for<'de2> Deserialize<'de2>,
+        {
+            type Value = MonteCarloGraph<N>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct MonteCarloGraph")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<MonteCarloGraph<N>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut graph = None;
+                let mut root = None;
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "graph" => {
+                            if graph.is_some() {
+                                return Err(de::Error::duplicate_field("graph"));
+                            }
+                            graph = Some(map.next_value()?);
+                        }
+                        "root" => {
+                            if root.is_some() {
+                                return Err(de::Error::duplicate_field("root"));
+                            }
+                            root = Some(map.next_value()?);
+                        }
+                        _ => {
+                            let _ = map.next_value::<de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                let graph = graph.ok_or_else(|| de::Error::missing_field("graph"))?;
+                let root = root.ok_or_else(|| de::Error::missing_field("root"))?;
+                Ok(MonteCarloGraph { graph, root })
+            }
+        }
+
+        const FIELDS: &[&str] = &["graph", "root"];
+        deserializer.deserialize_struct(
+            "MonteCarloGraph",
+            FIELDS,
+            MonteCarloGraphVisitor(std::marker::PhantomData),
+        )
+    }
+}
+
 impl<N> MonteCarloGraph<N>
 where
-    N: std::hash::Hash + Eq + Clone + Copy + Ord + Default + std::fmt::Debug,
+    N: std::hash::Hash
+        + Eq
+        + Clone
+        + Copy
+        + Ord
+        + Default
+        + std::fmt::Debug
+        + Serialize
+        + for<'de> Deserialize<'de>,
 {
     pub fn new() -> Self {
         MonteCarloGraph {
@@ -103,5 +221,18 @@ where
                 edge_weight.1 += weight.1;
             }
         }
+    }
+
+    pub fn to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let serialized = bincode::serde::encode_to_vec(&self, bincode::config::standard())?;
+        std::fs::write(path, serialized)?;
+        Ok(())
+    }
+
+    pub fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let data = std::fs::read(path)?;
+        let (deserialized, _): (Self, _) =
+            bincode::serde::decode_from_slice(&data, bincode::config::standard())?;
+        Ok(deserialized)
     }
 }

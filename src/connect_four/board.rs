@@ -1,6 +1,8 @@
 use core::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Token {
     Empty,
     Red,
@@ -14,7 +16,7 @@ pub enum BoardStatus {
     Win(Token),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct Board {
     grid: [[Token; 7]; 6],
 }
