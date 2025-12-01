@@ -1,3 +1,9 @@
+//! Monte Carlo Graph Search data structure for game tree exploration.
+//!
+//! This module implements a graph-based approach to Monte Carlo tree search,
+//! where game states are nodes and transitions are edges weighted with
+//! win/simulation statistics.
+
 use std::collections::HashSet;
 
 use petgraph::Direction;
@@ -7,10 +13,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::BoardStatus;
 
+/// Game state classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
+    /// A player has won the game
     Win,
+    /// The game ended in a draw
     Draw,
+    /// The game is still ongoing
     InProgress,
 }
 
@@ -73,6 +83,13 @@ where
         self.graph.contains_node(*n)
     }
 
+    /// Returns all incoming edges to a node with their weights.
+    ///
+    /// # Arguments
+    /// * `n` - The target node
+    ///
+    /// # Returns
+    /// A vector of (source_node, (wins, simulations)) tuples.
     pub fn edges_to(&self, n: &N) -> Vec<(N, (usize, usize))> {
         self.graph
             .edges_directed(*n, Direction::Incoming)
@@ -80,6 +97,13 @@ where
             .collect()
     }
 
+    /// Returns all outgoing edges from a node with their weights.
+    ///
+    /// # Arguments
+    /// * `n` - The source node
+    ///
+    /// # Returns
+    /// A vector of (target_node, (wins, simulations)) tuples.
     pub fn edges_from(&self, n: &N) -> Vec<(N, (usize, usize))> {
         self.graph
             .edges_directed(*n, Direction::Outgoing)
@@ -97,6 +121,20 @@ where
         self.graph.edge_weight(from, to)
     }
 
+    /// Propagates game outcome statistics backward through a path in the graph.
+    ///
+    /// Updates edge weights along the path based on the game's final outcome.
+    /// Win/loss statistics are tracked from each node's perspective (wins are
+    /// counted for the player who just moved to reach that state).
+    ///
+    /// # Arguments
+    /// * `path` - The sequence of game states from start to end
+    /// * `state` - The final game status (Win, Draw, or InProgress)
+    ///
+    /// # Behavior
+    /// - Adds missing edges with (0,0) weight
+    /// - Sets terminal node edge to (1,1) for wins, (0,1) for draws
+    /// - Propagates aggregate statistics backward through parent nodes
     pub fn back_propogate(&mut self, path: Vec<N>, state: BoardStatus) {
         if path.len() < 2 {
             return;

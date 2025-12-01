@@ -1,3 +1,10 @@
+//! Ultimate Tic-Tac-Toe game implementation.
+//!
+//! This module implements Ultimate Tic-Tac-Toe, a variant where the game board consists
+//! of a 3×3 grid of standard Tic-Tac-Toe boards. Players must win individual boards to
+//! claim positions in the outer board, and the first player to win three outer boards
+//! in a row wins the game.
+
 use std::fmt::Debug;
 use std::str::FromStr;
 
@@ -6,6 +13,10 @@ use serde::{Deserialize, Serialize};
 use crate::BoardStatus;
 use crate::GameBoard;
 
+/// Represents a move in Ultimate Tic-Tac-Toe.
+///
+/// A move specifies both which microboard to play in (via `microboard_row` and `microboard_col`)
+/// and which cell within that microboard (via `cell_row` and `cell_col`).
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct Move {
     microboard_row: u8,
@@ -27,6 +38,16 @@ impl Debug for Move {
 impl FromStr for Move {
     type Err = String;
 
+    /// Parses a move from a string containing four space-separated numbers.
+    ///
+    /// # Format
+    /// The string should contain: `microboard_row microboard_col cell_row cell_col`
+    ///
+    /// # Examples
+    /// ```ignore
+    /// let move_str = "1 2 0 1";
+    /// let mv: Move = move_str.parse()?;
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.trim().split_whitespace().collect();
         if parts.len() != 4 {
@@ -48,6 +69,7 @@ impl FromStr for Move {
 }
 
 impl From<(u8, u8, u8, u8)> for Move {
+    /// Creates a move from a tuple of (microboard_row, microboard_col, cell_row, cell_col).
     fn from(t: (u8, u8, u8, u8)) -> Self {
         Move {
             microboard_row: t.0,
@@ -58,13 +80,22 @@ impl From<(u8, u8, u8, u8)> for Move {
     }
 }
 
+/// The main Ultimate Tic-Tac-Toe game board.
+///
+/// This structure represents a 3×3 grid of microboards. The game follows these rules:
+/// - Players alternate turns placing marks in individual cells
+/// - The cell's position determines which microboard the next player must play in
+/// - If a microboard is already won or full, the player can choose any available microboard
+/// - A player wins by getting three microboards in a row (horizontally, vertically, or diagonally)
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct UltimateTTT {
     boards: [[MicroBoard; 3]; 3],
+    /// The microboard where the next move must be played, or None if any board is allowed.
     next_microboard: Option<(u8, u8)>,
 }
 
 impl UltimateTTT {
+    /// Creates a new Ultimate Tic-Tac-Toe game with all boards empty.
     pub fn new() -> Self {
         UltimateTTT {
             boards: [
@@ -80,6 +111,9 @@ impl UltimateTTT {
 impl GameBoard for UltimateTTT {
     type MoveType = Move;
 
+    /// Returns the current player (1 for X, 2 for O).
+    ///
+    /// Determines the current player by counting moves. Player 1 (X) goes first.
     fn get_current_player(&self) -> u8 {
         let mut x_count = 0;
         let mut o_count = 0;
@@ -105,8 +139,12 @@ impl GameBoard for UltimateTTT {
         }
     }
 
+    /// Returns all valid moves for the current game state.
+    ///
+    /// If a previous move directed play to a specific microboard (and that board is still playable),
+    /// only moves in that microboard are returned. Otherwise, moves from all playable microboards
+    /// are returned.
     fn get_available_moves(&self) -> Vec<Self::MoveType> {
-        // Implementation to get available moves
         let mut available_microboards = Vec::new();
         let mut available_moves = Vec::new();
 
@@ -138,8 +176,21 @@ impl GameBoard for UltimateTTT {
         available_moves
     }
 
+    /// Plays a move on the board.
+    ///
+    /// # Arguments
+    /// * `mv` - The move to play
+    /// * `player` - The player making the move (1 or 2)
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The game is already over
+    /// - The move is not in the list of available moves
+    /// - The target cell is already occupied
+    ///
+    /// # Side Effects
+    /// Updates `next_microboard` to direct the next player to the appropriate board.
     fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String> {
-        // Implementation to play a move
         if self.get_status() != BoardStatus::InProgress {
             return Err("Game is already over".to_string());
         }
@@ -164,8 +215,11 @@ impl GameBoard for UltimateTTT {
         Ok(())
     }
 
+    /// Returns the current status of the game.
+    ///
+    /// Checks for wins by examining if three microboards in a row have been won by the same player.
+    /// Returns `BoardStatus::Draw` if no moves are available and no player has won.
     fn get_status(&self) -> BoardStatus {
-        // Implementation to determine the current status of the ultimate board
         // Check rows and columns
         for i in 0..3 {
             if self.boards[i][0].get_status() != BoardStatus::InProgress
@@ -233,18 +287,25 @@ impl Debug for UltimateTTT {
     }
 }
 
+/// A single 3×3 Tic-Tac-Toe board within the Ultimate Tic-Tac-Toe game.
+///
+/// Each cell can be empty (0), occupied by player 1 (X), or occupied by player 2 (O).
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct MicroBoard {
     grid: [[u8; 3]; 3],
 }
 
 impl MicroBoard {
+    /// Creates a new empty microboard.
     pub fn new() -> Self {
         MicroBoard { grid: [[0; 3]; 3] }
     }
 
+    /// Returns the current status of this microboard.
+    ///
+    /// Checks for wins (three in a row) and returns the winning player.
+    /// Returns `BoardStatus::Draw` if the board is full with no winner.
     pub fn get_status(&self) -> BoardStatus {
-        // Implementation to determine the current status of the micro board
 
         // Check rows and columns for win
         for i in 0..3 {
@@ -282,6 +343,7 @@ impl MicroBoard {
         BoardStatus::InProgress
     }
 
+    /// Returns all empty cells in this microboard as (row, col) tuples.
     pub fn get_available_moves(&self) -> Vec<(u8, u8)> {
         let mut moves = Vec::new();
         for i in 0..3 {
@@ -294,6 +356,15 @@ impl MicroBoard {
         moves
     }
 
+    /// Places a player's mark in the specified cell.
+    ///
+    /// # Arguments
+    /// * `row` - The row index (0-2)
+    /// * `col` - The column index (0-2)
+    /// * `player` - The player number (1 or 2)
+    ///
+    /// # Errors
+    /// Returns an error if the cell is already occupied.
     pub fn play(&mut self, row: u8, col: u8, player: impl Into<u8>) -> Result<(), String> {
         let p = player.into();
         if self.grid[row as usize][col as usize] != 0 {

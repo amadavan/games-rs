@@ -1,17 +1,32 @@
+//! Connect Four game implementation.
+//!
+//! This module implements the classic Connect Four game, where players take turns
+//! dropping tokens into a vertical grid. The first player to connect four of their
+//! tokens in a row (horizontally, vertically, or diagonally) wins the game.
+
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{BoardStatus, GameBoard};
 
+/// Represents a token in the Connect Four game.
+///
+/// Tokens can be empty, red (player 1), or yellow (player 2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Token {
+    /// An empty cell
     Empty,
+    /// Red token (player 1)
     Red,
+    /// Yellow token (player 2)
     Yellow,
 }
 
 impl Token {
+    /// Converts the token to a numeric representation.
+    ///
+    /// Returns 0 for empty, 1 for red, and 2 for yellow.
     pub fn as_u8(&self) -> u8 {
         match self {
             Token::Empty => 0,
@@ -21,18 +36,33 @@ impl Token {
     }
 }
 
+/// The Connect Four game board.
+///
+/// A 6-row by 7-column grid where tokens drop to the lowest available position
+/// in each column. The board is indexed with row 0 at the bottom.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct ConnectFour {
     grid: [[Token; 7]; 6],
 }
 
 impl ConnectFour {
+    /// Creates a new Connect Four game with an empty board.
     pub fn new() -> Self {
         ConnectFour {
             grid: [[Token::Empty; 7]; 6],
         }
     }
 
+    /// Checks if a move to the specified column is valid.
+    ///
+    /// A move is valid if the column index is within bounds (0-6) and
+    /// the top row of that column is empty.
+    ///
+    /// # Arguments
+    /// * `column` - The column index (0-6)
+    ///
+    /// # Returns
+    /// `true` if the move is valid, `false` otherwise.
     pub fn is_valid_move(&self, column: usize) -> bool {
         if column >= 7 {
             return false;
@@ -44,6 +74,9 @@ impl ConnectFour {
 impl GameBoard for ConnectFour {
     type MoveType = usize;
 
+    /// Returns the current player (1 for Red, 2 for Yellow).
+    ///
+    /// Determines the current player by counting tokens. Player 1 (Red) goes first.
     fn get_current_player(&self) -> u8 {
         let mut x_count = 0;
         let mut o_count = 0;
@@ -65,6 +98,9 @@ impl GameBoard for ConnectFour {
         }
     }
 
+    /// Returns all columns where a token can be dropped.
+    ///
+    /// A column is available if its top row (row 5) is empty.
     fn get_available_moves(&self) -> Vec<Self::MoveType> {
         let mut moves = Vec::new();
         for col in 0..7 {
@@ -75,6 +111,18 @@ impl GameBoard for ConnectFour {
         moves
     }
 
+    /// Drops a token into the specified column.
+    ///
+    /// The token falls to the lowest available position in the column.
+    ///
+    /// # Arguments
+    /// * `mv` - The column index (0-6) to drop the token into
+    /// * `player` - The player making the move (1 for Red, 2 for Yellow)
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The column index is out of bounds (>= 7)
+    /// - The column is full (top row is not empty)
     fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String> {
         if mv >= 7 || self.grid[5][mv] != Token::Empty {
             return Err("Invalid move".to_string());
@@ -95,9 +143,12 @@ impl GameBoard for ConnectFour {
         Ok(())
     }
 
+    /// Returns the current status of the game.
+    ///
+    /// Checks for four connected tokens in any direction (horizontal, vertical, or diagonal).
+    /// Returns `BoardStatus::Draw` if the board is full with no winner.
     fn get_status(&self) -> BoardStatus {
-        // Implementation to determine the current status of the board
-        let mut status = BoardStatus::InProgress; // Placeholder
+        let mut status = BoardStatus::InProgress;
 
         // Check columns for 4 in a row
         for col in 0..7 {

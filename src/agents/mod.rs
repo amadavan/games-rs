@@ -1,23 +1,57 @@
+//! AI agents for playing board games.
+//!
+//! This module provides various agent implementations that can play games
+//! implementing the `GameBoard` trait. Agents range from human players to
+//! sophisticated Monte Carlo graph search algorithms.
+
 pub mod monte_carlo_graph;
 
 use rand::seq::IndexedRandom;
 
 use crate::{BoardStatus, GameBoard, agents::monte_carlo_graph::MonteCarloGraph};
 
+/// Trait for game-playing agents.
+///
+/// Agents can select moves and optionally receive feedback about game outcomes
+/// to improve their strategy.
 pub trait Agent<Game: GameBoard> {
+    /// Selects a move for the current board state.
+    ///
+    /// # Arguments
+    /// * `board` - The current game state
+    ///
+    /// # Returns
+    /// The selected move for the current board state.
     fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType;
 
+    /// Notifies the agent about game progression and outcome.
+    ///
+    /// This method is called to provide feedback that learning agents can use
+    /// to update their strategies.
+    ///
+    /// # Arguments
+    /// * `_moves` - The sequence of (player, board state) pairs representing the game history
+    /// * `_status` - The final game status (win, draw, or in progress)
     fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
         ()
     }
 }
 
+/// An interactive agent that prompts a human player for moves via stdin.
+///
+/// This agent displays the current board state and requests move input from
+/// the user through the console.
 pub struct PlayerAgent<Game: GameBoard> {
+    /// The player number this agent represents
     pub player: u8,
     _marker: std::marker::PhantomData<Game>,
 }
 
 impl<Game: GameBoard> PlayerAgent<Game> {
+    /// Creates a new human player agent.
+    ///
+    /// # Arguments
+    /// * `player` - The player number (1 or 2)
     pub fn new(player: u8) -> Self {
         PlayerAgent {
             player,
@@ -27,6 +61,9 @@ impl<Game: GameBoard> PlayerAgent<Game> {
 }
 
 impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
+    /// Prompts the human player to enter a move via stdin.
+    ///
+    /// Displays the board and repeatedly requests input until a valid move is entered.
     fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
         let mut mv = None;
 
@@ -56,11 +93,15 @@ impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
     }
 }
 
+/// An agent that selects moves uniformly at random from available moves.
+///
+/// This agent provides a baseline for comparison with more sophisticated strategies.
 pub struct RandomAgent<Game: GameBoard> {
     _marker: std::marker::PhantomData<Game>,
 }
 
 impl<Game: GameBoard> RandomAgent<Game> {
+    /// Creates a new random agent.
     pub fn new() -> Self {
         RandomAgent {
             _marker: std::marker::PhantomData,
@@ -69,6 +110,7 @@ impl<Game: GameBoard> RandomAgent<Game> {
 }
 
 impl<Game: GameBoard> Agent<Game> for RandomAgent<Game> {
+    /// Selects a random move from the available moves.
     fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
         let available_moves = board.get_available_moves();
         let mut rng = rand::rng();
@@ -76,25 +118,46 @@ impl<Game: GameBoard> Agent<Game> for RandomAgent<Game> {
     }
 }
 
+/// An agent using Monte Carlo Graph Search with UCT (Upper Confidence bounds applied to Trees).
+///
+/// This agent maintains a graph of game states and transitions, learning from game outcomes
+/// to make increasingly better decisions. It uses the UCT formula to balance exploration
+/// and exploitation when selecting moves.
 pub struct MonteCarloGraphSearch<Game: GameBoard> {
     graph: MonteCarloGraph<Game>,
 }
 
 impl<Game: GameBoard> MonteCarloGraphSearch<Game> {
+    /// Creates a new Monte Carlo Graph Search agent with an empty graph.
     pub fn new() -> Self {
         MonteCarloGraphSearch {
             graph: MonteCarloGraph::new(),
         }
     }
 
+    /// Creates a Monte Carlo Graph Search agent from an existing graph.
+    ///
+    /// This allows loading a pre-trained graph to continue learning or use learned strategies.
+    ///
+    /// # Arguments
+    /// * `graph` - A pre-existing Monte Carlo graph
     pub fn from_graph(graph: MonteCarloGraph<Game>) -> Self {
         MonteCarloGraphSearch { graph }
     }
 }
 
 impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
+    /// Selects a move using the UCT (Upper Confidence bounds applied to Trees) formula.
+    ///
+    /// For each available move, calculates a UCT value that balances:
+    /// - Exploitation: moves with high win rates
+    /// - Exploration: moves that haven't been tried much
+    ///
+    /// The formula used is: w/n + sqrt(2 * ln(N) / n)
+    /// where w = wins, n = simulations for this move, N = total simulations from resulting state.
+    ///
+    /// Returns a random choice among the highest-valued moves.
     fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
-        // Implementation of move selection using Monte Carlo Graph Search
         let available_moves = board.get_available_moves();
 
         let values = available_moves
@@ -135,8 +198,15 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
         choice.0.clone()
     }
 
+    /// Updates the graph with game outcome information.
+    ///
+    /// Propagates win/loss statistics backward through the game state graph,
+    /// allowing the agent to learn from the game's result.
+    ///
+    /// # Arguments
+    /// * `_moves` - The sequence of (player, board state) pairs from the game
+    /// * `_status` - The final game status (win or draw)
     fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
-        // Update the Monte Carlo Graph based on the game outcome
         let path = _moves.iter().map(|(_, b)| b.clone()).collect();
         self.graph.back_propogate(path, _status);
     }
