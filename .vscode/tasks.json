@@ -1,0 +1,61 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cargo build connect_four",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--bin",
+                "connect_four"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "cargo build ultimate_ttt",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--bin",
+                "ultimate_ttt"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "cargo build connect_four_trainer",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "build",
+                "--bin",
+                "connect_four_trainer"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "cargo test --no-run --lib",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "test",
+                "--no-run",
+                "--lib"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        }
+    ]
+}

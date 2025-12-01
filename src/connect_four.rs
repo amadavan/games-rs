@@ -2,6 +2,8 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use crate::{BoardStatus, GameBoard};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Token {
     Empty,
@@ -9,26 +11,91 @@ pub enum Token {
     Yellow,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Serialize, Deserialize)]
-pub enum BoardStatus {
-    InProgress,
-    Draw,
-    Win(Token),
+impl Token {
+    pub fn as_u8(&self) -> u8 {
+        match self {
+            Token::Empty => 0,
+            Token::Red => 1,
+            Token::Yellow => 2,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
-pub struct Board {
+pub struct ConnectFour {
     grid: [[Token; 7]; 6],
 }
 
-impl Board {
+impl ConnectFour {
     pub fn new() -> Self {
-        Board {
+        ConnectFour {
             grid: [[Token::Empty; 7]; 6],
         }
     }
 
-    pub fn get_status(&self) -> BoardStatus {
+    pub fn is_valid_move(&self, column: usize) -> bool {
+        if column >= 7 {
+            return false;
+        }
+        self.grid[5][column] == Token::Empty
+    }
+}
+
+impl GameBoard for ConnectFour {
+    type MoveType = usize;
+
+    fn get_current_player(&self) -> u8 {
+        let mut x_count = 0;
+        let mut o_count = 0;
+
+        for row in 0..6 {
+            for col in 0..7 {
+                match self.grid[row][col] {
+                    Token::Red => x_count += 1,
+                    Token::Yellow => o_count += 1,
+                    Token::Empty => {}
+                }
+            }
+        }
+
+        if x_count <= o_count {
+            1 // Player Red's turn
+        } else {
+            2 // Player Yellow's turn
+        }
+    }
+
+    fn get_available_moves(&self) -> Vec<Self::MoveType> {
+        let mut moves = Vec::new();
+        for col in 0..7 {
+            if self.grid[5][col] == Token::Empty {
+                moves.push(col);
+            }
+        }
+        moves
+    }
+
+    fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String> {
+        if mv >= 7 || self.grid[5][mv] != Token::Empty {
+            return Err("Invalid move".to_string());
+        }
+
+        let player_token = match player.into() {
+            1 => Token::Red,
+            _ => Token::Yellow,
+        };
+
+        for row in 0..6 {
+            if self.grid[row][mv] == Token::Empty {
+                self.grid[row][mv] = player_token;
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn get_status(&self) -> BoardStatus {
         // Implementation to determine the current status of the board
         let mut status = BoardStatus::InProgress; // Placeholder
 
@@ -40,7 +107,7 @@ impl Board {
                     && self.grid[row][col] == self.grid[row + 2][col]
                     && self.grid[row][col] == self.grid[row + 3][col]
                 {
-                    return BoardStatus::Win(self.grid[row][col]);
+                    return BoardStatus::Win(self.grid[row][col].as_u8());
                 }
             }
         }
@@ -53,7 +120,7 @@ impl Board {
                     && self.grid[row][col] == self.grid[row][col + 2]
                     && self.grid[row][col] == self.grid[row][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col]);
+                    return BoardStatus::Win(self.grid[row][col].as_u8());
                 }
             }
         }
@@ -66,7 +133,7 @@ impl Board {
                     && self.grid[row][col] == self.grid[row + 2][col + 2]
                     && self.grid[row][col] == self.grid[row + 3][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col]);
+                    return BoardStatus::Win(self.grid[row][col].as_u8());
                 }
             }
         }
@@ -77,7 +144,7 @@ impl Board {
                     && self.grid[row][col] == self.grid[row + 2][col - 2]
                     && self.grid[row][col] == self.grid[row + 3][col - 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col]);
+                    return BoardStatus::Win(self.grid[row][col].as_u8());
                 }
             }
         }
@@ -93,47 +160,15 @@ impl Board {
 
         status
     }
-
-    pub fn is_valid_move(&self, column: usize) -> bool {
-        if column >= 7 {
-            return false;
-        }
-        self.grid[5][column] == Token::Empty
-    }
-
-    pub fn get_available_moves(&self) -> [bool; 7] {
-        let mut moves = [false; 7];
-        for col in 0..7 {
-            if self.grid[5][col] == Token::Empty {
-                moves[col] = true;
-            }
-        }
-        moves
-    }
-
-    pub fn play(&mut self, column: usize, token: Token) -> Result<(), String> {
-        if column >= 7 {
-            return Err("Invalid column".to_string());
-        }
-
-        for row in 0..6 {
-            if self.grid[row][column] == Token::Empty {
-                self.grid[row][column] = token;
-                return Ok(());
-            }
-        }
-
-        Err("Column is full".to_string())
-    }
 }
 
-impl Default for Board {
+impl Default for ConnectFour {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl fmt::Debug for Board {
+impl fmt::Debug for ConnectFour {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for row in (0..6).rev() {
             for col in 0..7 {

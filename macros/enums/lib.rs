@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{ToTokens, quote};
+use quote::quote;
 
 #[proc_macro_attribute]
 pub fn enum_meta(_attr: TokenStream, item: TokenStream) -> TokenStream {
