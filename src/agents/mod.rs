@@ -5,6 +5,7 @@
 //! sophisticated Monte Carlo graph search algorithms.
 
 pub mod monte_carlo_graph;
+pub mod scorer;
 
 use rand::seq::IndexedRandom;
 
@@ -74,16 +75,12 @@ impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
             // Get the user input
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).unwrap();
-            let parsed_move: Result<<Game as GameBoard>::MoveType, _> = input
-                .trim()
-                .parse()
-                .map_err(|_| "Failed to parse move".to_string());
+            let parsed_move: Result<<Game as GameBoard>::MoveType, _> = input.trim().parse();
 
-            if board
-                .get_available_moves()
-                .contains(&parsed_move.as_ref().unwrap())
+            if let Ok(parsed_move) = parsed_move
+                && board.get_available_moves().contains(&parsed_move)
             {
-                mv = Some(parsed_move.unwrap());
+                mv = Some(parsed_move);
             } else {
                 println!("Invalid move, try again.");
             }
@@ -209,5 +206,96 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
     fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
         let path = _moves.iter().map(|(_, b)| b.clone()).collect();
         self.graph.back_propogate(path, _status);
+    }
+}
+
+pub trait ScoreFunction<Game: GameBoard> {
+    fn score(&self, board: &Game, mv: &<Game as GameBoard>::MoveType, player: u8) -> f32;
+
+    fn update(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
+        ()
+    }
+}
+
+pub struct MinimaxAgent<Game: GameBoard, ScoreFn: ScoreFunction<Game>> {
+    depth: usize,
+    score_fn: ScoreFn,
+    _marker: std::marker::PhantomData<Game>,
+}
+
+impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> {
+    pub fn new(depth: usize, score_fn: ScoreFn) -> Self {
+        MinimaxAgent {
+            depth,
+            score_fn,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> Agent<Game> for MinimaxAgent<Game, ScoreFn> {
+    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
+        let available_moves = board.get_available_moves();
+
+        let mut best_move = available_moves[0];
+        let mut best_score = f32::NEG_INFINITY;
+
+        // TODO: need to traverse deeper (otherwise it only considers itself)
+        for mv in available_moves {
+            let mut next_board = board.clone();
+            let _ = next_board.play(mv, board.get_current_player());
+
+            let score = self
+                .score_fn
+                .score(&next_board, &mv, board.get_current_player());
+            if score > best_score {
+                best_score = score;
+                best_move = mv;
+            }
+
+            for i in 0..self.depth {
+                if next_board.get_status() != BoardStatus::InProgress {
+                    break;
+                }
+
+                let mut next_best_move = next_board.get_available_moves()[0];
+                let mut next_best_score = f32::NEG_INFINITY;
+                for mv in next_board.get_available_moves() {
+                    let mut opp_board = next_board.clone();
+                    let _ = opp_board.play(mv, next_board.get_current_player());
+
+                    let next_score =
+                        self.score_fn
+                            .score(&opp_board, &mv, next_board.get_current_player());
+                    if next_score > next_best_score {
+                        next_best_score = next_score;
+                        next_best_move = mv;
+                    }
+                }
+                next_board
+                    .play(next_best_move, next_board.get_current_player())
+                    .unwrap();
+            }
+
+            let sign = if board.get_current_player() == next_board.get_current_player() {
+                1.0
+            } else {
+                -1.0
+            };
+            let final_score = sign
+                * self
+                    .score_fn
+                    .score(&next_board, &mv, board.get_current_player());
+            if final_score > best_score {
+                best_score = final_score;
+                best_move = mv;
+            }
+        }
+
+        best_move
+    }
+
+    fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
+        self.score_fn.update(_moves, _status);
     }
 }

@@ -36,6 +36,16 @@ impl Token {
     }
 }
 
+impl From<u8> for Token {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Token::Red,
+            2 => Token::Yellow,
+            _ => Token::Empty,
+        }
+    }
+}
+
 /// The Connect Four game board.
 ///
 /// A 6-row by 7-column grid where tokens drop to the lowest available position
@@ -51,6 +61,14 @@ impl ConnectFour {
         ConnectFour {
             grid: [[Token::Empty; 7]; 6],
         }
+    }
+
+    /// Returns a reference to the current grid state.
+    ///
+    /// # Returns
+    /// A 2D array representing the grid, with rows and columns.
+    pub fn get_grid(&self) -> &[[Token; 7]; 6] {
+        &self.grid
     }
 
     /// Checks if a move to the specified column is valid.
