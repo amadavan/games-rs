@@ -34,7 +34,9 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
         mv: &<ConnectFour as GameBoard>::MoveType,
         player: u8,
     ) -> f32 {
-        let grid = board.get_grid();
+        let mut next_board = board.clone();
+        next_board.play(*mv, player).unwrap();
+        let grid = next_board.get_grid();
 
         let mut score = 0.0;
 
