@@ -1,16 +1,16 @@
-use clap::Parser;
 use games_rs::{
-    agents::{Agent, MinimaxAgent, PlayerAgent, RandomAgent, scorer::naive_scorer::NaiveScorer},
-    connect_four::ConnectFour,
+    agents::{MinimaxAgent, PlayerAgent, RandomAgent, scorer::naive_scorer::NaiveScorer},
     ultimate_ttt::UltimateTTT,
 };
 
-type Game = ConnectFour;
+type Game = UltimateTTT;
 
 fn main() {
-    let ai_player1 = PlayerAgent::<Game>::new(1);
-    let scorer = NaiveScorer::<Game>::new();
-    let ai_player2 = MinimaxAgent::<Game, _>::new(4, scorer);
+    // let ai_player1 = MinimaxAgent::<Game>::new(1);
+    let scorer1 = NaiveScorer::<Game>::new();
+    let ai_player1 = MinimaxAgent::<Game, _>::new(4, scorer1);
+    let scorer2 = NaiveScorer::<Game>::new();
+    let ai_player2 = MinimaxAgent::<Game, _>::new(4, scorer2);
 
     let result = games_rs::play_game::<Game, _, _>(&ai_player1, &ai_player2);
 
