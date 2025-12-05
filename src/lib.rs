@@ -6,6 +6,7 @@ pub mod agents;
 pub mod common;
 pub mod connect_four;
 pub mod ultimate_ttt;
+pub mod cards;
 
 extern crate macros;
 
