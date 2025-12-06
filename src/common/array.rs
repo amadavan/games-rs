@@ -112,7 +112,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// The maximum capacity is given by the generic parameter `CAP`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::<_, 16>::new();
     /// array.push(1);
@@ -135,7 +135,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Return the number of elements in the `Array`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     /// array.pop();
@@ -146,23 +146,23 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
         self.len as usize
     }
 
-    unsafe fn set_len(&mut self, length: usize) {
+    pub unsafe fn set_len(&mut self, length: usize) {
         debug_assert!(length <= CAP);
         self.len = length;
     }
 
-    fn as_ptr(&self) -> *const T {
+    pub fn as_ptr(&self) -> *const T {
         self.xs.as_ptr() as _
     }
 
-    fn as_mut_ptr(&mut self) -> *mut T {
+    pub fn as_mut_ptr(&mut self) -> *mut T {
         self.xs.as_mut_ptr() as _
     }
 
     /// Returns whether the `Array` is empty.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1]);
     /// array.pop();
@@ -176,7 +176,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Return the capacity of the `Array`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let array = Array::from([1, 2, 3]);
     /// assert_eq!(array.capacity(), 3);
@@ -189,7 +189,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Return true if the `Array` is completely filled to its capacity, false otherwise.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::<_, 1>::new();
     /// assert!(!array.is_full());
@@ -203,7 +203,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Returns the capacity left in the `Array`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     /// array.pop();
@@ -290,7 +290,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// `try_insert` for fallible version.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::<_, 2>::new();
     ///
@@ -314,7 +314,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// ***Panics*** `index` is out of bounds.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::<_, 2>::new();
     ///
@@ -364,7 +364,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// ***Panics*** if the `index` is out of bounds.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     ///
@@ -392,7 +392,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Return `Some(` *element* `)` if the index is in bounds, else `None`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     ///
@@ -417,7 +417,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// ***Panics*** if the `index` is out of bounds.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     ///
@@ -441,7 +441,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// is no element at `index`. Otherwise, return the element inside `Some`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3]);
     ///
@@ -466,7 +466,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// elements.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut array = Array::from([1, 2, 3, 4]);
     /// array.retain(|x| *x & 1 != 0 );
@@ -560,45 +560,45 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
         drop(g);
     }
 
-    /// Returns the remaining spare capacity of the vector as a slice of
-    /// `MaybeUninit<T>`.
-    ///
-    /// The returned slice can be used to fill the vector with data (e.g. by
-    /// reading from a file) before marking the data as initialized using the
-    /// [`set_len`] method.
-    ///
-    /// [`set_len`]: Array::set_len
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use Array::Array;
-    ///
-    /// // Allocate vector big enough for 10 elements.
-    /// let mut v: Array<i32, 10> = Array::new();
-    ///
-    /// // Fill in the first 3 elements.
-    /// let uninit = v.spare_capacity_mut();
-    /// uninit[0].write(0);
-    /// uninit[1].write(1);
-    /// uninit[2].write(2);
-    ///
-    /// // Mark the first 3 elements of the vector as being initialized.
-    /// unsafe {
-    ///     v.set_len(3);
-    /// }
-    ///
-    /// assert_eq!(&v[..], &[0, 1, 2]);
-    /// ```
-    pub fn spare_capacity_mut(&mut self) -> &mut [T] {
-        let len = self.len();
-        &mut self.xs[len..]
-    }
+    // /// Returns the remaining spare capacity of the vector as a slice of
+    // /// `MaybeUninit<T>`.
+    // ///
+    // /// The returned slice can be used to fill the vector with data (e.g. by
+    // /// reading from a file) before marking the data as initialized using the
+    // /// [`set_len`] method.
+    // ///
+    // /// [`set_len`]: Array::set_len
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// use games_rs::common::array::Array;
+    // ///
+    // /// // Allocate vector big enough for 10 elements.
+    // /// let mut v: Array<i32, 10> = Array::new();
+    // ///
+    // /// // Fill in the first 3 elements.
+    // /// let uninit = v.spare_capacity_mut();
+    // /// uninit[0].write(0);
+    // /// uninit[1].write(1);
+    // /// uninit[2].write(2);
+    // ///
+    // /// // Mark the first 3 elements of the vector as being initialized.
+    // /// unsafe {
+    // ///     v.set_len(3);
+    // /// }
+    // ///
+    // /// assert_eq!(&v[..], &[0, 1, 2]);
+    // /// ```
+    // pub fn spare_capacity_mut(&mut self) -> &mut [T] {
+    //     let len = self.len();
+    //     &mut self.xs[len..]
+    // }
 
     /// Copy all elements from the slice and append to the `Array`.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut vec: Array<usize, 10> = Array::new();
     /// vec.push(1);
@@ -643,7 +643,7 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// the end point is greater than the length of the vector.
     ///
     /// ```
-    /// use Array::Array;
+    /// use games_rs::common::array::Array;
     ///
     /// let mut v1 = Array::from([1, 2, 3]);
     /// let v2: Array<_, 3> = v1.drain(0..2).collect();
@@ -724,6 +724,8 @@ impl<T: Default + Copy, const CAP: usize> Array<T, CAP> {
     /// Returns the Array, replacing the original with a new empty Array.
     ///
     /// ```
+    /// use games_rs::common::array::Array;
+    ///
     /// let mut v = Array::from([0, 1, 2, 3]);
     /// assert_eq!([0, 1, 2, 3], v.take().into_inner().unwrap());
     /// assert!(v.is_empty());
@@ -747,11 +749,26 @@ impl<T: Default + Copy, const CAP: usize> DerefMut for Array<T, CAP> {
     }
 }
 
+impl<T: Default + Copy, const CAP: usize> From<[T; CAP]> for Array<T, CAP> {
+    /// Create an `Array` from a fixed size array.
+    ///
+    /// ```
+    /// use games_rs::common::array::Array;
+    ///
+    /// let array: Array<_, 4> = Array::from([1, 2, 3, 4]);
+    /// assert_eq!(array.len(), 4);
+    /// assert_eq!(array.capacity(), 4);
+    /// ```
+    fn from(arr: [T; CAP]) -> Self {
+        Array { xs: arr, len: CAP }
+    }
+}
+
 /// Try to create an `Array` from a slice. This will return an error if the slice was too big to
 /// fit.
 ///
 /// ```
-/// use Array::Array;
+/// use games_rs::common::array::Array;
 /// use std::convert::TryInto as _;
 ///
 /// let array: Array<_, 4> = (&[1, 2, 3] as &[_]).try_into().unwrap();
@@ -778,7 +795,7 @@ where
 /// Iterate the `Array` with references to each element.
 ///
 /// ```
-/// use Array::Array;
+/// use games_rs::common::array::Array;
 ///
 /// let array = Array::from([1, 2, 3]);
 ///
@@ -797,7 +814,7 @@ impl<'a, T: Default + Copy, const CAP: usize> IntoIterator for &'a Array<T, CAP>
 /// Iterate the `Array` with mutable references to each element.
 ///
 /// ```
-/// use Array::Array;
+/// use games_rs::common::array::Array;
 ///
 /// let mut array = Array::from([1, 2, 3]);
 ///
@@ -818,7 +835,7 @@ impl<'a, T: Default + Copy, const CAP: usize> IntoIterator for &'a mut Array<T, 
 /// The vector is consumed by this operation.
 ///
 /// ```
-/// use Array::Array;
+/// use games_rs::common::array::Array;
 ///
 /// for elt in Array::from([1, 2, 3]) {
 ///     // ...
