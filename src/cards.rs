@@ -1,6 +1,5 @@
-use std::collections::VecDeque;
-use macros::enum_meta;
 use derive_aliases::derive;
+use macros::enum_meta;
 
 #[derive(..StdTraits)]
 pub enum Suit {
@@ -45,7 +44,7 @@ impl Deck {
         }
     }
 
-    pub fn new() -> Self {
+    pub fn new_standard() -> Self {
         let mut cards = VecDeque::new();
 
         for &suit in &[Suit::Hearts, Suit::Diamonds, Suit::Clubs, Suit::Spades] {
@@ -64,7 +63,25 @@ impl Deck {
                 Rank::King,
                 Rank::Ace,
             ] {
-                cards.push_back(Card { suit: suit.clone(), rank: rank.clone() });
+                cards.push_back(Card {
+                    suit: suit.clone(),
+                    rank: rank.clone(),
+                });
+            }
+        }
+
+        Deck { cards }
+    }
+
+    pub fn new_with_ranks(suits: &[Suit], ranks: &[Rank]) -> Self {
+        let mut cards = VecDeque::new();
+
+        for &suit in suits {
+            for &rank in ranks {
+                cards.push_back(Card {
+                    suit: suit.clone(),
+                    rank: rank.clone(),
+                });
             }
         }
 
@@ -108,5 +125,11 @@ impl Deck {
 
     pub fn push_bottom(&mut self, card: Card) {
         self.cards.push_back(card);
+    }
+}
+
+impl Debug for Deck {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[ {:?} ]", self.cards)
     }
 }
