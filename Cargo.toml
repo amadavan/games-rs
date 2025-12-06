@@ -16,3 +16,4 @@ petgraph = { version = "0.8.3", features = ["serde-1"] }
 indicatif = "0.18.3"
 clap = { version = "4.5.53", features = ["derive"] }
 burn = "0.19.1"
+derive_aliases = "0.4.7"

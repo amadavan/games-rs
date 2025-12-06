@@ -3,14 +3,27 @@ use std::{fmt::Debug, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 pub mod agents;
+pub mod cards;
 pub mod common;
 pub mod connect_four;
+pub mod rummy;
 pub mod ultimate_ttt;
-pub mod cards;
 
 extern crate macros;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+mod derive_alias {
+    derive_aliases::define! {
+        Eq = ::core::cmp::Eq, ::core::cmp::PartialEq;
+        Ord = ::core::cmp::PartialOrd, ::core::cmp::Ord, ..Eq;
+        Copy = ::core::marker::Copy, ::core::clone::Clone;
+        StdTraits = ..Eq, ..Ord, ..Copy, ::core::hash::Hash;
+        // Serialize = ::serde::Serialize, ::serde::Deserialize, ..StdTraits;
+    }
+}
+
+use derive_aliases::derive;
+
+#[derive(..StdTraits)]
 pub enum BoardStatus {
     InProgress,
     Win(u8),
@@ -32,7 +45,7 @@ pub trait GameBoard:
 
     fn get_current_player(&self) -> u8;
 
-    fn get_available_moves(&self) -> Vec<(Self::MoveType)>;
+    fn get_available_moves(&self) -> Vec<Self::MoveType>;
 
     fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String>;
 

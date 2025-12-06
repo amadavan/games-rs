@@ -161,7 +161,7 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
 
         let values = available_moves
             .iter()
-            .map(|(mv)| {
+            .map(|mv| {
                 let mut next_board = board.clone();
                 let _ = next_board.play(*mv, board.get_current_player());
                 let edge_weight = self.graph.edge_weight(board.clone(), next_board.clone());
