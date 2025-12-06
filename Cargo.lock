@@ -1932,6 +1932,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_aliases"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a42564b20fdeb062b38ad78d567d0479b2b318ff679b20895d9a1de3b6896002"
+dependencies = [
+ "derive_aliases_proc_macro",
+]
+
+[[package]]
+name = "derive_aliases_proc_macro"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e81edf3b0f0a7d68f2113aee7cedffa73d1fadea46fc85e468786a7f7aac998c"
+
+[[package]]
 name = "derive_arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2513,6 +2528,7 @@ dependencies = [
  "bincode",
  "burn",
  "clap",
+ "derive_aliases",
  "indicatif",
  "macros",
  "petgraph 0.8.3",
@@ -4047,7 +4063,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
- "proc-macro-crate 1.3.1",
+ "proc-macro-crate 3.4.0",
  "proc-macro2",
  "quote",
  "syn",

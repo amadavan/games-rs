@@ -1,9 +1,8 @@
 use std::collections::VecDeque;
 use macros::enum_meta;
+use derive_aliases::derive;
 
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[enum_meta]
+#[derive(..StdTraits)]
 pub enum Suit {
     Hearts,
     Diamonds,
@@ -11,8 +10,7 @@ pub enum Suit {
     Spades,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[enum_meta]
+#[derive(..StdTraits)]
 pub enum Rank {
     Two,
     Three,
@@ -29,11 +27,13 @@ pub enum Rank {
     Ace,
 }
 
+#[derive(..StdTraits)]
 pub struct Card {
     suit: Suit,
     rank: Rank,
 }
 
+#[derive(..Eq, ..Ord, Hash)]
 pub struct Deck {
     cards: VecDeque<Card>,
 }
@@ -69,6 +69,24 @@ impl Deck {
         }
 
         Deck { cards }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.cards.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.cards.len()
+    }
+
+    pub fn clear(&mut self) {
+        self.cards.clear();
+    }
+
+    pub fn reverse(&mut self) {
+        let mut cards_vec: Vec<Card> = self.cards.drain(..).collect();
+        cards_vec.reverse();
+        self.cards = VecDeque::from(cards_vec);
     }
 
     pub fn shuffle(&mut self) {

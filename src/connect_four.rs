@@ -9,11 +9,12 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{BoardStatus, GameBoard};
+use derive_aliases::derive;
 
 /// Represents a token in the Connect Four game.
 ///
 /// Tokens can be empty, red (player 1), or yellow (player 2).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(..StdTraits, Debug, Serialize, Deserialize)]
 pub enum Token {
     /// An empty cell
     Empty,
@@ -50,7 +51,7 @@ impl From<u8> for Token {
 ///
 /// A 6-row by 7-column grid where tokens drop to the lowest available position
 /// in each column. The board is indexed with row 0 at the bottom.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize)]
 pub struct ConnectFour {
     grid: [[Token; 7]; 6],
 }

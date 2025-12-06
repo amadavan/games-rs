@@ -13,11 +13,13 @@ use serde::{Deserialize, Serialize};
 use crate::BoardStatus;
 use crate::GameBoard;
 
+use derive_aliases::derive;
+
 /// Represents a move in Ultimate Tic-Tac-Toe.
 ///
 /// A move specifies both which microboard to play in (via `microboard_row` and `microboard_col`)
 /// and which cell within that microboard (via `cell_row` and `cell_col`).
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize)]
 pub struct Move {
     microboard_row: u8,
     microboard_col: u8,
@@ -87,7 +89,7 @@ impl From<(u8, u8, u8, u8)> for Move {
 /// - The cell's position determines which microboard the next player must play in
 /// - If a microboard is already won or full, the player can choose any available microboard
 /// - A player wins by getting three microboards in a row (horizontally, vertically, or diagonally)
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize)]
 pub struct UltimateTTT {
     boards: [[MicroBoard; 3]; 3],
     /// The microboard where the next move must be played, or None if any board is allowed.
@@ -290,7 +292,7 @@ impl Debug for UltimateTTT {
 /// A single 3×3 Tic-Tac-Toe board within the Ultimate Tic-Tac-Toe game.
 ///
 /// Each cell can be empty (0), occupied by player 1 (X), or occupied by player 2 (O).
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize)]
 pub struct MicroBoard {
     grid: [[u8; 3]; 3],
 }
