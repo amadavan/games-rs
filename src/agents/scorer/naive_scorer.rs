@@ -32,7 +32,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
         &self,
         board: &ConnectFour,
         mv: &<ConnectFour as GameBoard>::MoveType,
-        player: u8,
+        player: <ConnectFour as GameBoard>::PlayerType,
     ) -> f32 {
         let mut next_board = board.clone();
         next_board.play(*mv, player).unwrap();
@@ -228,7 +228,7 @@ impl ScoreFunction<UltimateTTT> for NaiveScorer<UltimateTTT> {
         &self,
         board: &UltimateTTT,
         mv: &<UltimateTTT as GameBoard>::MoveType,
-        player: u8,
+        player: <UltimateTTT as GameBoard>::PlayerType,
     ) -> f32 {
         // Implement a simple heuristic to score the board
         // This is a placeholder implementation

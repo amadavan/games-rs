@@ -15,6 +15,33 @@ use crate::GameBoard;
 
 use derive_aliases::derive;
 
+#[derive(..StdTraits, Serialize, Deserialize, Debug)]
+pub enum Player {
+    X,
+    O,
+    Empty,
+}
+
+impl From<u8> for Player {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Player::X,
+            2 => Player::O,
+            _ => Player::Empty,
+        }
+    }
+}
+
+impl Into<u8> for Player {
+    fn into(self) -> u8 {
+        match self {
+            Player::X => 1,
+            Player::O => 2,
+            Player::Empty => 0,
+        }
+    }
+}
+
 /// Represents a move in Ultimate Tic-Tac-Toe.
 ///
 /// A move specifies both which microboard to play in (via `microboard_row` and `microboard_col`)
@@ -112,11 +139,12 @@ impl UltimateTTT {
 
 impl GameBoard for UltimateTTT {
     type MoveType = Move;
+    type PlayerType = Player;
 
     /// Returns the current player (1 for X, 2 for O).
     ///
     /// Determines the current player by counting moves. Player 1 (X) goes first.
-    fn get_current_player(&self) -> u8 {
+    fn get_current_player(&self) -> Player {
         let mut x_count = 0;
         let mut o_count = 0;
 
@@ -125,9 +153,9 @@ impl GameBoard for UltimateTTT {
                 for row in 0..3 {
                     for col in 0..3 {
                         match self.boards[i][j].grid[row][col] {
-                            1 => x_count += 1,
-                            2 => o_count += 1,
-                            _ => {}
+                            Player::X => x_count += 1,
+                            Player::O => o_count += 1,
+                            Player::Empty => {}
                         }
                     }
                 }
@@ -135,9 +163,9 @@ impl GameBoard for UltimateTTT {
         }
 
         if x_count <= o_count {
-            1 // Player X's turn
+            Player::X // Player X's turn
         } else {
-            2 // Player O's turn
+            Player::O // Player O's turn
         }
     }
 
@@ -192,7 +220,7 @@ impl GameBoard for UltimateTTT {
     ///
     /// # Side Effects
     /// Updates `next_microboard` to direct the next player to the appropriate board.
-    fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String> {
+    fn play(&mut self, mv: Self::MoveType, player: Self::PlayerType) -> Result<(), String> {
         if self.get_status() != BoardStatus::InProgress {
             return Err("Game is already over".to_string());
         }
@@ -273,9 +301,9 @@ impl Debug for UltimateTTT {
                     for col in 0..3 {
                         let cell = self.boards[i][j].grid[row][col];
                         let symbol = match cell {
-                            1 => 'X',
-                            2 => 'O',
-                            _ => '-',
+                            Player::X => 'X',
+                            Player::O => 'O',
+                            Player::Empty => '-',
                         };
                         write!(f, "{} ", symbol)?;
                     }
@@ -294,13 +322,15 @@ impl Debug for UltimateTTT {
 /// Each cell can be empty (0), occupied by player 1 (X), or occupied by player 2 (O).
 #[derive(..StdTraits, Serialize, Deserialize)]
 pub struct MicroBoard {
-    grid: [[u8; 3]; 3],
+    grid: [[Player; 3]; 3],
 }
 
 impl MicroBoard {
     /// Creates a new empty microboard.
     pub fn new() -> Self {
-        MicroBoard { grid: [[0; 3]; 3] }
+        MicroBoard {
+            grid: [[Player::Empty; 3]; 3],
+        }
     }
 
     /// Returns the current status of this microboard.
@@ -308,34 +338,33 @@ impl MicroBoard {
     /// Checks for wins (three in a row) and returns the winning player.
     /// Returns `BoardStatus::Draw` if the board is full with no winner.
     pub fn get_status(&self) -> BoardStatus {
-
         // Check rows and columns for win
         for i in 0..3 {
-            if self.grid[i][0] != 0
+            if self.grid[i][0] != Player::Empty
                 && self.grid[i][0] == self.grid[i][1]
                 && self.grid[i][1] == self.grid[i][2]
             {
-                return BoardStatus::Win(self.grid[i][0]);
+                return BoardStatus::Win(self.grid[i][0].into());
             }
-            if self.grid[0][i] != 0
+            if self.grid[0][i] != Player::Empty
                 && self.grid[0][i] == self.grid[1][i]
                 && self.grid[1][i] == self.grid[2][i]
             {
-                return BoardStatus::Win(self.grid[0][i]);
+                return BoardStatus::Win(self.grid[0][i].into());
             }
         }
         // Check diagonals
-        if self.grid[0][0] != 0
+        if self.grid[0][0] != Player::Empty
             && self.grid[0][0] == self.grid[1][1]
             && self.grid[1][1] == self.grid[2][2]
         {
-            return BoardStatus::Win(self.grid[0][0]);
+            return BoardStatus::Win(self.grid[0][0].into());
         }
-        if self.grid[0][2] != 0
+        if self.grid[0][2] != Player::Empty
             && self.grid[0][2] == self.grid[1][1]
             && self.grid[1][1] == self.grid[2][0]
         {
-            return BoardStatus::Win(self.grid[0][2]);
+            return BoardStatus::Win(self.grid[0][2].into());
         }
 
         if self.get_available_moves().is_empty() {
@@ -350,7 +379,7 @@ impl MicroBoard {
         let mut moves = Vec::new();
         for i in 0..3 {
             for j in 0..3 {
-                if self.grid[i][j] == 0 {
+                if self.grid[i][j] == Player::Empty {
                     moves.push((i as u8, j as u8));
                 }
             }
@@ -367,12 +396,11 @@ impl MicroBoard {
     ///
     /// # Errors
     /// Returns an error if the cell is already occupied.
-    pub fn play(&mut self, row: u8, col: u8, player: impl Into<u8>) -> Result<(), String> {
-        let p = player.into();
-        if self.grid[row as usize][col as usize] != 0 {
+    pub fn play(&mut self, row: u8, col: u8, player: Player) -> Result<(), String> {
+        if self.grid[row as usize][col as usize] != Player::Empty {
             return Err("Cell already occupied".to_string());
         }
-        self.grid[row as usize][col as usize] = p;
+        self.grid[row as usize][col as usize] = player;
         Ok(())
     }
 }

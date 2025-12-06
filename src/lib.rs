@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use std::{fmt::Debug, str::FromStr};
 
 use serde::{Deserialize, Serialize};
@@ -43,11 +45,22 @@ pub trait GameBoard:
         + Debug
         + FromStr;
 
-    fn get_current_player(&self) -> u8;
+    type PlayerType: Copy
+        + Clone
+        + std::hash::Hash
+        + Eq
+        + Ord
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + Debug
+        + From<u8>
+        + Into<u8>;
+
+    fn get_current_player(&self) -> Self::PlayerType;
 
     fn get_available_moves(&self) -> Vec<Self::MoveType>;
 
-    fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String>;
+    fn play(&mut self, mv: Self::MoveType, player: Self::PlayerType) -> Result<(), String>;
 
     fn get_status(&self) -> BoardStatus;
 }
@@ -65,7 +78,7 @@ pub fn play_game<Game: GameBoard, A1: agents::Agent<Game>, A2: agents::Agent<Gam
             return game.get_status();
         }
 
-        let move_to_play = if current_player == 1 {
+        let move_to_play = if current_player == Game::PlayerType::from(1) {
             a1.get_move(&game)
         } else {
             a2.get_move(&game)

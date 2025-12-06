@@ -27,7 +27,12 @@ impl<Game: GameBoard> ScoreFunction<Game> for NeuralNetScorer<Game> {
     ///
     /// # Returns
     /// A floating-point score representing the desirability of the board state.
-    fn score(&self, board: &Game, mv: &<Game as GameBoard>::MoveType, player: u8) -> f32 {
+    fn score(
+        &self,
+        board: &Game,
+        mv: &<Game as GameBoard>::MoveType,
+        player: Game::PlayerType,
+    ) -> f32 {
         // Implement neural network inference to score the board
         // This is a placeholder implementation
         0.0

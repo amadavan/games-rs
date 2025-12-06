@@ -24,25 +24,22 @@ pub enum Token {
     Yellow,
 }
 
-impl Token {
-    /// Converts the token to a numeric representation.
-    ///
-    /// Returns 0 for empty, 1 for red, and 2 for yellow.
-    pub fn as_u8(&self) -> u8 {
-        match self {
-            Token::Empty => 0,
-            Token::Red => 1,
-            Token::Yellow => 2,
-        }
-    }
-}
-
 impl From<u8> for Token {
     fn from(value: u8) -> Self {
         match value {
             1 => Token::Red,
             2 => Token::Yellow,
             _ => Token::Empty,
+        }
+    }
+}
+
+impl Into<u8> for Token {
+    fn into(self) -> u8 {
+        match self {
+            Token::Red => 1,
+            Token::Yellow => 2,
+            Token::Empty => 0,
         }
     }
 }
@@ -92,28 +89,29 @@ impl ConnectFour {
 
 impl GameBoard for ConnectFour {
     type MoveType = usize;
+    type PlayerType = Token;
 
     /// Returns the current player (1 for Red, 2 for Yellow).
     ///
     /// Determines the current player by counting tokens. Player 1 (Red) goes first.
-    fn get_current_player(&self) -> u8 {
-        let mut x_count = 0;
-        let mut o_count = 0;
+    fn get_current_player(&self) -> Token {
+        let mut red_count = 0;
+        let mut yellow_count = 0;
 
         for row in 0..6 {
             for col in 0..7 {
                 match self.grid[row][col] {
-                    Token::Red => x_count += 1,
-                    Token::Yellow => o_count += 1,
+                    Token::Red => red_count += 1,
+                    Token::Yellow => yellow_count += 1,
                     Token::Empty => {}
                 }
             }
         }
 
-        if x_count <= o_count {
-            1 // Player Red's turn
+        if red_count <= yellow_count {
+            Token::Red // Player Red's turn
         } else {
-            2 // Player Yellow's turn
+            Token::Yellow // Player Yellow's turn
         }
     }
 
@@ -142,19 +140,14 @@ impl GameBoard for ConnectFour {
     /// Returns an error if:
     /// - The column index is out of bounds (>= 7)
     /// - The column is full (top row is not empty)
-    fn play(&mut self, mv: Self::MoveType, player: impl Into<u8>) -> Result<(), String> {
+    fn play(&mut self, mv: Self::MoveType, token: Token) -> Result<(), String> {
         if mv >= 7 || self.grid[5][mv] != Token::Empty {
             return Err("Invalid move".to_string());
         }
 
-        let player_token = match player.into() {
-            1 => Token::Red,
-            _ => Token::Yellow,
-        };
-
         for row in 0..6 {
             if self.grid[row][mv] == Token::Empty {
-                self.grid[row][mv] = player_token;
+                self.grid[row][mv] = token;
                 break;
             }
         }
@@ -177,7 +170,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col]
                     && self.grid[row][col] == self.grid[row + 3][col]
                 {
-                    return BoardStatus::Win(self.grid[row][col].as_u8());
+                    return BoardStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -190,7 +183,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row][col + 2]
                     && self.grid[row][col] == self.grid[row][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].as_u8());
+                    return BoardStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -203,7 +196,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col + 2]
                     && self.grid[row][col] == self.grid[row + 3][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].as_u8());
+                    return BoardStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -214,7 +207,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col - 2]
                     && self.grid[row][col] == self.grid[row + 3][col - 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].as_u8());
+                    return BoardStatus::Win(self.grid[row][col].into());
                 }
             }
         }

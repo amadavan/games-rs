@@ -212,7 +212,12 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
 }
 
 pub trait ScoreFunction<Game: GameBoard> {
-    fn score(&self, board: &Game, mv: &<Game as GameBoard>::MoveType, player: u8) -> f32;
+    fn score(
+        &self,
+        board: &Game,
+        mv: &<Game as GameBoard>::MoveType,
+        player: Game::PlayerType,
+    ) -> f32;
 
     fn update(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
         ()
