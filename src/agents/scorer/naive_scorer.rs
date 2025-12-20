@@ -34,9 +34,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
         mv: &<ConnectFour as GameBoard>::MoveType,
         player: <ConnectFour as GameBoard>::PlayerType,
     ) -> f32 {
-        let mut next_board = board.clone();
-        next_board.play(*mv, player).unwrap();
-        let grid = next_board.get_grid();
+        let grid = board.get_grid();
 
         let mut score = 0.0;
 
@@ -56,7 +54,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             {
                 if grid[row][c] != player.into() {
                     score -= 120.0;
-                } else if col >= &c && col <= &(c + 3) {
+                } else {
                     score += 100.0
                 }
             }
@@ -70,7 +68,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             {
                 if grid[r][*col] != player.into() {
                     score -= 120.0;
-                } else if row >= r && row <= r + 3 {
+                } else {
                     score += 100.0
                 }
             }
@@ -85,7 +83,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 {
                     if grid[r][c] != player.into() {
                         score -= 120.0;
-                    } else if row >= r && row <= r + 3 && col >= &c && col <= &(c + 3) {
+                    } else {
                         score += 100.0
                     }
                 }
@@ -101,7 +99,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 {
                     if grid[r][c] != player.into() {
                         score -= 120.0;
-                    } else if row >= r && row <= r + 3 && col >= &(c - 3) && col <= &c {
+                    } else {
                         score += 100.0;
                     }
                 }
@@ -116,7 +114,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             {
                 if grid[row][c] != player.into() {
                     score -= 12.0;
-                } else if col >= &c && col <= &(c + 2) {
+                } else {
                     score += 10.0
                 }
             }
@@ -129,7 +127,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             {
                 if grid[r][*col] != player.into() {
                     score -= 12.0;
-                } else if row >= r && row <= r + 2 {
+                } else {
                     score += 10.0
                 }
             }
@@ -143,7 +141,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 {
                     if grid[r][c] != player.into() {
                         score -= 12.0;
-                    } else if row >= r && row <= r + 2 && col >= &c && col <= &(c + 2) {
+                    } else {
                         score += 10.0
                     }
                 }
@@ -158,7 +156,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 {
                     if grid[r][c] != player.into() {
                         score -= 12.0;
-                    } else if row >= r && row <= r + 2 && col >= &(c - 2) && col <= &c {
+                    } else {
                         score += 10.0
                     }
                 }
@@ -170,7 +168,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             if grid[row][c] != Token::Empty && grid[row][c] == grid[row][c + 1] {
                 if grid[row][c] != player.into() {
                     score -= 2.0;
-                } else if col >= &c && col <= &(c + 1) {
+                } else {
                     score += 1.0
                 }
             }
@@ -180,7 +178,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             if grid[r][*col] != Token::Empty && grid[r][*col] == grid[r + 1][*col] {
                 if grid[r][*col] != player.into() {
                     score -= 2.0;
-                } else if row >= r && row <= r + 1 {
+                } else {
                     score += 1.0
                 }
             }
@@ -191,7 +189,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 if grid[r][c] != Token::Empty && grid[r][c] == grid[r + 1][c + 1] {
                     if grid[r][c] != player.into() {
                         score -= 2.0;
-                    } else if row >= r && row <= r + 1 && col >= &c && col <= &(c + 1) {
+                    } else {
                         score += 1.0
                     }
                 }
@@ -203,7 +201,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 if grid[r][c] != Token::Empty && grid[r][c] == grid[r + 1][c - 1] {
                     if grid[r][c] != player.into() {
                         score -= 2.0;
-                    } else if row >= r && row <= r + 1 && col >= &(c - 1) && col <= &c {
+                    } else {
                         score += 1.0
                     }
                 }

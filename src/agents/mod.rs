@@ -238,6 +238,51 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> 
             _marker: std::marker::PhantomData,
         }
     }
+
+    fn alpha_beta(
+        &self,
+        board: &Game,
+        mv: Game::MoveType,
+        depth: usize,
+        alpha: f32,
+        beta: f32,
+        player: Game::PlayerType,
+    ) -> f32 {
+        if depth == 0 || board.get_status() != BoardStatus::InProgress {
+            return self.score_fn.score(board, &mv, board.get_current_player());
+        }
+
+        let mut alpha = alpha;
+        let mut beta = beta;
+
+        if player == board.get_current_player() {
+            let mut max_eval = f32::NEG_INFINITY;
+            for mv in board.get_available_moves() {
+                let mut new_board = board.clone();
+                new_board.play(mv, board.get_current_player()).unwrap();
+                let eval = self.alpha_beta(&new_board, mv, depth - 1, alpha, beta, player);
+                max_eval = f32::max(max_eval, eval);
+                alpha = f32::max(alpha, eval);
+                if beta <= alpha {
+                    break;
+                }
+            }
+            max_eval
+        } else {
+            let mut min_eval = f32::INFINITY;
+            for mv in board.get_available_moves() {
+                let mut new_board = board.clone();
+                new_board.play(mv, board.get_current_player()).unwrap();
+                let eval = self.alpha_beta(&new_board, mv, depth - 1, alpha, beta, player);
+                min_eval = f32::min(min_eval, eval);
+                beta = f32::min(beta, eval);
+                if beta <= alpha {
+                    break;
+                }
+            }
+            min_eval
+        }
+    }
 }
 
 impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> Agent<Game> for MinimaxAgent<Game, ScoreFn> {
@@ -247,59 +292,19 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> Agent<Game> for MinimaxAgent
         let mut best_move = available_moves[0];
         let mut best_score = f32::NEG_INFINITY;
 
-        // TODO: need to traverse deeper (otherwise it only considers itself)
         for mv in available_moves {
-            let mut score = self.score_fn.score(board, &mv, board.get_current_player());
-            let mut tmp_board = board.clone();
-            tmp_board.play(mv, board.get_current_player()).unwrap();
-
-            for _ in 0..self.depth {
-                if tmp_board.get_status() != BoardStatus::InProgress {
-                    break;
-                }
-
-                let available_moves = tmp_board.get_available_moves();
-                let scores = available_moves
-                    .iter()
-                    .map(|x| {
-                        (
-                            x,
-                            self.score_fn
-                                .score(&tmp_board, &x, tmp_board.get_current_player()),
-                        )
-                    })
-                    .collect::<Vec<_>>();
-
-                // Select the move with the highest score
-                let mv_ = scores
-                    .iter()
-                    .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-                    .unwrap();
-
-                let sign = if board.get_current_player() == tmp_board.get_current_player() {
-                    1.0
-                } else {
-                    -1.0
-                };
-
-                score = if board.get_current_player() == tmp_board.get_current_player() {
-                    if score > sign * mv_.1 {
-                        sign * mv_.1
-                    } else {
-                        score
-                    }
-                } else {
-                    if score < sign * mv_.1 {
-                        score
-                    } else {
-                        sign * mv_.1
-                    }
-                };
-
-                tmp_board
-                    .play(mv_.0.clone(), tmp_board.get_current_player())
-                    .unwrap();
-            }
+            let score = self.alpha_beta(
+                &{
+                    let mut tmp_board = board.clone();
+                    tmp_board.play(mv, board.get_current_player()).unwrap();
+                    tmp_board
+                },
+                mv,
+                self.depth - 1,
+                f32::NEG_INFINITY,
+                f32::INFINITY,
+                board.get_current_player(),
+            );
 
             if score > best_score {
                 best_score = score;
