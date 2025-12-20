@@ -9,7 +9,6 @@ resolver = "2"
 
 [dependencies]
 macros = { path = "macros" }
-bincode = { version = "2.0.1", features = ["serde"] }
 rand = "0.9.2"
 serde = { version = "1.0.228", features = ["derive"] }
 petgraph = { version = "0.8.3", features = ["serde-1"] }
@@ -17,3 +16,4 @@ indicatif = "0.18.3"
 clap = { version = "4.5.53", features = ["derive"] }
 burn = "0.19.1"
 derive_aliases = "0.4.7"
+bitcode = { version = "0.6.9", features = ["serde"] }

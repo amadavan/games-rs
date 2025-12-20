@@ -217,18 +217,17 @@ where
         valid
     }
 
-    /// Serializes the graph to a file using bincode.
+    /// Serializes the graph to a file using bitcode.
     pub fn to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let serialized = bincode::serde::encode_to_vec(&self, bincode::config::legacy())?;
+        let serialized = bitcode::serialize(self)?;
         std::fs::write(path, serialized)?;
         Ok(())
     }
 
-    /// Deserializes the graph from a bincode file.
+    /// Deserializes the graph from a bitcode file.
     pub fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let data = std::fs::read(path)?;
-        let deserialized: Self =
-            bincode::serde::decode_from_slice(&data, bincode::config::legacy())?.0;
+        let deserialized: Self = bitcode::deserialize(&data)?;
         Ok(deserialized)
     }
 }
