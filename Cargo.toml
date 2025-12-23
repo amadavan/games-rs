@@ -17,3 +17,4 @@ clap = { version = "4.5.53", features = ["derive"] }
 burn = "0.19.1"
 derive_aliases = "0.4.7"
 bitcode = { version = "0.6.9", features = ["serde"] }
+tinyvec = { version = "1.10.0", features = ["serde"] }
