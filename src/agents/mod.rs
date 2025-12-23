@@ -162,21 +162,19 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
         let values = available_moves
             .iter()
             .map(|mv| {
-                let mut next_board = board.clone();
-                let _ = next_board.play(*mv, board.get_current_player());
+                let next_board = {
+                    let mut next_board = board.clone();
+                    let _ = next_board.play(*mv, board.get_current_player());
+                    next_board
+                };
                 let edge_weight = self.graph.edge_weight(board.clone(), next_board.clone());
                 if edge_weight.is_none() {
                     (mv, 1f64 + 2f64.sqrt())
                 } else {
                     let edge_weight = edge_weight.unwrap();
-                    let target_count = self
-                        .graph
-                        .edges_from(&next_board)
-                        .iter()
-                        .map(|(_, (_, n))| *n)
-                        .sum::<usize>();
-                    let w = (edge_weight.0 + 1) as f64;
-                    let n = (edge_weight.1 + 1) as f64;
+                    let target_count = self.graph.get_aggregate_outcomes(&next_board).simulations();
+                    let w = (edge_weight.wins() + 1) as f64;
+                    let n = (edge_weight.simulations() + 1) as f64;
                     let N = (target_count + 1) as f64;
                     (mv, w / n + (2.0 * N.ln() / n).sqrt())
                 }
@@ -249,7 +247,12 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> 
         player: Game::PlayerType,
     ) -> f32 {
         if depth == 0 || board.get_status() != BoardStatus::InProgress {
-            return self.score_fn.score(board, &mv, board.get_current_player());
+            let sign = if player == board.get_current_player() {
+                1.0
+            } else {
+                -1.0
+            };
+            return sign * self.score_fn.score(board, &mv, board.get_current_player());
         }
 
         let mut alpha = alpha;
