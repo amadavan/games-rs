@@ -7,6 +7,7 @@
 pub mod monte_carlo_graph;
 pub mod scorer;
 
+use rand::Rng;
 use rand::seq::IndexedRandom;
 use std::cmp::max;
 use std::cmp::min;
@@ -181,18 +182,21 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
             })
             .collect::<Vec<_>>();
 
-        let mut ordered_values = values.into_iter().collect::<Vec<_>>();
-        ordered_values.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-
-        let maximizers = ordered_values
+        let max = values
             .iter()
-            .filter(|(_, v)| *v < ordered_values[0].1 + 1e-6)
+            .max_by(|a, b| b.1.partial_cmp(&a.1).unwrap())
+            .unwrap()
+            .1;
+
+        let maximizers = values
+            .iter()
+            .filter(|(_, v)| *v > max - 1e-6)
             .collect::<Vec<_>>();
-        use rand::Rng;
+
         let mut random = rand::rng();
         let choice = maximizers[random.random_range(0..maximizers.len())];
 
-        choice.0.clone()
+        *choice.0
     }
 
     /// Updates the graph with game outcome information.

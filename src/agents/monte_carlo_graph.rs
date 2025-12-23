@@ -19,6 +19,14 @@ use crate::BoardStatus;
 use derive_aliases::derive;
 
 /// Game state classification.
+///
+/// # Examples
+/// ```
+/// use games_rs::agents::monte_carlo_graph::State;
+///
+/// let state = State::InProgress;
+/// assert_eq!(state, State::InProgress);
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
     /// A player has won the game
@@ -29,6 +37,20 @@ pub enum State {
     InProgress,
 }
 
+/// Statistics for a game transition edge.
+///
+/// Tracks outcomes from the parent node's perspective.
+///
+/// # Examples
+/// ```
+/// use games_rs::agents::monte_carlo_graph::EdgeWeight;
+///
+/// let weight: EdgeWeight = (5, 3, 2).into();
+/// assert_eq!(weight.wins(), 5);
+/// assert_eq!(weight.losses(), 3);
+/// assert_eq!(weight.draws(), 2);
+/// assert_eq!(weight.simulations(), 10);
+/// ```
 #[derive(..StdTraits, Serialize, Deserialize, Debug)]
 pub struct EdgeWeight {
     wins: usize,
@@ -37,6 +59,17 @@ pub struct EdgeWeight {
 }
 
 impl EdgeWeight {
+    /// Swaps wins and losses (for opponent's perspective).
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::EdgeWeight;
+    ///
+    /// let weight: EdgeWeight = (5, 3, 2).into();
+    /// let flipped = weight.flip();
+    /// assert_eq!(flipped.wins(), 3);
+    /// assert_eq!(flipped.losses(), 5);
+    /// ```
     pub fn flip(&self) -> EdgeWeight {
         EdgeWeight {
             wins: self.losses,
@@ -45,18 +78,22 @@ impl EdgeWeight {
         }
     }
 
+    /// Returns the number of wins.
     pub fn wins(&self) -> usize {
         self.wins
     }
 
+    /// Returns the number of losses.
     pub fn losses(&self) -> usize {
         self.losses
     }
 
+    /// Returns the number of draws.
     pub fn draws(&self) -> usize {
         self.draws
     }
 
+    /// Returns total simulations (wins + losses + draws).
     pub fn simulations(&self) -> usize {
         self.wins + self.losses + self.draws
     }
@@ -109,7 +146,20 @@ impl From<EdgeWeight> for (usize, usize, usize) {
 /// Monte Carlo tree/graph search structure for game state exploration.
 ///
 /// Tracks game states (nodes) and transitions (edges) with win/simulation statistics.
-/// Edge weights are (wins, simulations) tuples where wins are counted from the parent's perspective.
+/// Edge weights represent (wins, losses, draws) from the parent node's perspective.
+///
+/// # Examples
+/// ```
+/// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+/// use games_rs::BoardStatus;
+///
+/// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+/// let path = vec![0, 1, 2];
+/// graph.back_propogate(path, BoardStatus::Win(0));
+///
+/// assert!(graph.contains_node(&1));
+/// assert!(graph.contains_edge(&0, &1));
+/// ```
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(
     bound(serialize = "N: Serialize"),
@@ -131,6 +181,14 @@ where
     for<'a> N: Deserialize<'a>,
 {
     /// Creates a new graph with the default node as root.
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    ///
+    /// let graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// assert!(graph.contains_node(&0));
+    /// ```
     pub fn new() -> Self {
         let mut graph = DiGraphMap::new();
         graph.add_node(N::default());
@@ -140,6 +198,20 @@ where
         }
     }
 
+    /// Aggregates outcomes from all outgoing edges.
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    /// use games_rs::BoardStatus;
+    ///
+    /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// graph.back_propogate(vec![0, 1], BoardStatus::Win(0));
+    /// graph.back_propogate(vec![0, 2], BoardStatus::Draw);
+    ///
+    /// let outcomes = graph.get_aggregate_outcomes(&0);
+    /// assert_eq!(outcomes.simulations(), 2);
+    /// ```
     #[inline]
     pub fn get_aggregate_outcomes(&self, node: &N) -> EdgeWeight {
         self.edges_from(node)
@@ -161,6 +233,7 @@ where
         self.graph.contains_node(*n)
     }
 
+    /// Returns all incoming edges with their weights.
     #[inline]
     pub fn edges_to(&self, n: &N) -> Vec<(N, EdgeWeight)> {
         self.graph
@@ -169,6 +242,7 @@ where
             .collect()
     }
 
+    /// Returns all outgoing edges with their weights.
     #[inline]
     pub fn edges_from(&self, n: &N) -> Vec<(N, EdgeWeight)> {
         self.graph
@@ -183,24 +257,51 @@ where
         self.graph.contains_edge(*from, *to)
     }
 
-    /// Returns the (wins, simulations) weight of an edge, or None if it doesn't exist.
+    /// Returns the weight of an edge, or None if it doesn't exist.
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    /// use games_rs::BoardStatus;
+    ///
+    /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// graph.back_propogate(vec![0, 1], BoardStatus::Win(0));
+    ///
+    /// let weight = graph.edge_weight(0, 1).unwrap();
+    /// assert_eq!(weight.wins(), 1);
+    /// assert_eq!(weight.losses(), 0);
+    /// ```
     #[inline]
     pub fn edge_weight(&self, from: N, to: N) -> Option<&EdgeWeight> {
         self.graph.edge_weight(from, to)
     }
 
+    /// Propagates weight updates up the tree recursively.
     fn propogate_edge(&mut self, n: &N, weight_update: EdgeWeight) {
         for (src, _) in self.edges_to(n) {
-            // Need to add weight.flip to weight
-            // Then propogate_edge (src, weight.flip)
             if let Some(weight) = self.graph.edge_weight_mut(src, *n) {
                 *weight += weight_update.flip();
-
                 self.propogate_edge(&src, weight_update.flip());
             }
         }
     }
 
+    /// Updates the graph with simulation results from a game path.
+    ///
+    /// Creates nodes/edges as needed and propagates outcome statistics upward.
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    /// use games_rs::BoardStatus;
+    ///
+    /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// graph.back_propogate(vec![0, 1, 2], BoardStatus::Win(0));
+    ///
+    /// assert!(graph.contains_edge(&0, &1));
+    /// assert!(graph.contains_edge(&1, &2));
+    /// assert!(graph.validate());
+    /// ```
     pub fn back_propogate(&mut self, path: Vec<N>, state: BoardStatus) {
         for i in (1..path.len()) {
             let from = path[i - 1];
@@ -210,7 +311,6 @@ where
                 self.graph.add_node(to);
             }
 
-            // Check for existence of the edge and propogate if it doesn't exist
             if !self.contains_edge(&from, &to) {
                 let weight = self.get_aggregate_outcomes(&to);
                 self.graph.add_edge(from, to, weight.flip());
@@ -218,24 +318,30 @@ where
             }
         }
 
-        // If it is a leaf node that has not been seen, the final edge will be zero
-        // This needs to be modified and propogated up
         if state != BoardStatus::InProgress || self.contains_node(&path[path.len() - 1]) {
-            // Decide the weight based on the victory condition
             let weight: EdgeWeight = match state {
                 BoardStatus::Win(_) => (1, 0, 0).into(),
                 BoardStatus::Draw => (0, 0, 1).into(),
                 _ => panic!("Invalid board status"),
             };
 
-            // All edges exist, so modify the last edge and propogate back up
             self.propogate_edge(&path[path.len() - 1], weight.flip());
         }
     }
 
     /// Validates graph integrity.
     ///
-    /// Checks that each non-leaf node's incoming edges match its aggregated outgoing edges.
+    /// Checks that each non-leaf node's incoming edge weights match its aggregated outgoing edges.
+    ///
+    /// # Examples
+    /// ```
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    /// use games_rs::BoardStatus;
+    ///
+    /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// graph.back_propogate(vec![0, 1, 2], BoardStatus::Win(0));
+    /// assert!(graph.validate());
+    /// ```
     pub fn validate(&self) -> bool {
         let mut valid = true;
         self.graph
@@ -252,6 +358,14 @@ where
     }
 
     /// Serializes the graph to a file using bitcode.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    ///
+    /// let graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
+    /// graph.to_file("graph.bin").unwrap();
+    /// ```
     pub fn to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let serialized = bitcode::serialize(self)?;
         std::fs::write(path, serialized)?;
@@ -259,6 +373,13 @@ where
     }
 
     /// Deserializes the graph from a bitcode file.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
+    ///
+    /// let graph: MonteCarloGraph<u32> = MonteCarloGraph::from_file("graph.bin").unwrap();
+    /// ```
     pub fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let data = std::fs::read(path)?;
         let deserialized: Self = bitcode::deserialize(&data)?;
