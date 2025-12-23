@@ -3,10 +3,10 @@ use std::str::FromStr;
 use crate::{
     GameBoard,
     cards::{Card, Deck},
-    common::array::Array,
 };
 use derive_aliases::derive;
 use serde::{Deserialize, Serialize};
+use tinyvec::ArrayVec;
 
 #[derive(..StdTraits, Debug, Serialize, Deserialize)]
 pub enum Player {
@@ -161,6 +161,7 @@ impl Rummy {
             Action::DrawFromDiscard => self.draw_card(player, true),
             Action::Discard(card) => self.discard_card(player, card),
             Action::Knock(card) => {
+                self.discard_card(player, card);
                 // Logic for knocking
                 unimplemented!()
             }
@@ -205,6 +206,25 @@ impl Rummy {
         }
     }
 
+    pub fn knock(&mut self, player: Player) -> Result<(), String> {
+        // Generate melds
+
+        // Allow opposing player to add to melds if score != 0
+
+        // Leave remaining cards in hand and calculate points
+        let other_player = match player {
+            Player::Player1 => Player::Player2,
+            Player::Player2 => Player::Player1,
+        };
+
+        self.caluclate_points(player);
+        self.caluclate_points(other_player);
+
+        unimplemented!()
+    }
+
+    pub fn caluclate_points(&self, player: Player) {}
+
     pub fn get_available_moves(&self) -> Vec<Action> {
         let mut moves = Vec::new();
 
@@ -231,15 +251,98 @@ impl Rummy {
         moves
     }
 
-    pub fn get_minimal_points(&self, hand: &Vec<Card>) -> u8 {
+    pub fn get_min_pt_melds(&self, hand: &Vec<Card>) -> (u8, Vec<Vec<Card>>) {
         // Construct all possible melds
         // TODO: Isolate by rank for sets
         // TODO: Isolate by suit for runs
         // TODO: Identify melds with more than 3 cards
         // TODO: Use combinatorial approach to find best meld combination
 
+        let rank_ordered = {
+            let mut sets = hand.clone();
+            sets.sort_by_key(|c| *c.rank());
+            sets
+        };
+        let suit_ordered = {
+            let mut runs = hand.clone();
+            runs.sort_by_key(|c| *c.suit());
+            runs
+        };
+
+        let sets = {
+            let mut melds = Vec::new();
+            let mut i = 0;
+            while i < rank_ordered.len() {
+                let mut current_set = vec![rank_ordered[i]];
+                let mut j = i + 1;
+                while j < rank_ordered.len() && rank_ordered[j].rank() == rank_ordered[i].rank() {
+                    current_set.push(rank_ordered[j]);
+                    j += 1;
+                }
+                if current_set.len() >= 3 {
+                    melds.push(current_set);
+                }
+                i = j;
+            }
+            melds
+        };
+
+        let runs = {
+            let mut melds = Vec::new();
+            let mut i = 0;
+            while i < suit_ordered.len() {
+                let mut current_run = vec![suit_ordered[i]];
+                let mut j = i + 1;
+                while j < suit_ordered.len()
+                    && suit_ordered[j].suit() == suit_ordered[i].suit()
+                    && *suit_ordered[j].rank() as u8 == *suit_ordered[j - 1].rank() as u8 + 1
+                {
+                    current_run.push(suit_ordered[j]);
+                    j += 1;
+                }
+                if current_run.len() >= 3 {
+                    melds.push(current_run);
+                }
+                i = j;
+            }
+            melds
+        };
+
+        // Find non-overlapping melds
+        let melds = {
+            let mut melds = Vec::new();
+            melds.extend(sets.clone().into_iter().filter(|set| {
+                !runs
+                    .iter()
+                    .any(|run| set.iter().any(|card| run.contains(card)))
+            }));
+            melds.extend(runs.clone().into_iter().filter(|run| {
+                !sets
+                    .iter()
+                    .any(|set| run.iter().any(|card| set.contains(card)))
+            }));
+            melds
+        };
+
+        // Find overlapping melds
+        let overlapping_melds = {
+            let mut melds = Vec::new();
+            for set in &sets {
+                for run in &runs {
+                    if set.iter().any(|card| run.contains(card)) {
+                        melds.push(vec![set.clone(), run.clone()].concat());
+                    }
+                }
+            }
+            melds
+        };
+
+        // Find combination of overlapping melds that minimizes point total
+
         // Logic to calculate minimal points in hand
-        unimplemented!()
+        (0, melds)
+
+        // Return (minimum points, resulting melds)
     }
 
     // Additional methods for game logic would go here
@@ -251,4 +354,6 @@ impl Default for Rummy {
     }
 }
 
-pub type Hand = Array<Card, 11>; // Max 11 cards in hand during play
+pub type Hand = ArrayVec<[Card; 11]>; // Max 11 cards in hand during play
+
+// pub type Hand = Array<Card, 11>; // Max 11 cards in hand during play
