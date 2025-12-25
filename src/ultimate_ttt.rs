@@ -5,6 +5,7 @@
 //! claim positions in the outer board, and the first player to win three outer boards
 //! in a row wins the game.
 
+use std::fmt;
 use std::fmt::Debug;
 use std::str::FromStr;
 
@@ -53,6 +54,10 @@ pub struct Move {
     cell_row: u8,
     cell_col: u8,
 }
+
+unsafe impl Send for Move {}
+
+unsafe impl Sync for Move {}
 
 impl Debug for Move {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -109,6 +114,18 @@ impl From<(u8, u8, u8, u8)> for Move {
     }
 }
 
+impl From<&Move> for (u8, u8, u8, u8) {
+    /// Converts a reference to a move into a tuple of (microboard_row, microboard_col, cell_row, cell_col).
+    fn from(mv: &Move) -> (u8, u8, u8, u8) {
+        (
+            mv.microboard_row,
+            mv.microboard_col,
+            mv.cell_row,
+            mv.cell_col,
+        )
+    }
+}
+
 /// The main Ultimate Tic-Tac-Toe game board.
 ///
 /// This structure represents a 3×3 grid of microboards. The game follows these rules:
@@ -134,6 +151,14 @@ impl UltimateTTT {
             ],
             next_microboard: None,
         }
+    }
+
+    pub fn get_microboards(&self) -> &[[MicroBoard; 3]; 3] {
+        &self.boards
+    }
+
+    pub fn get_microboard(&self, row: u8, col: u8) -> &MicroBoard {
+        &self.boards[row as usize][col as usize]
     }
 }
 
@@ -178,7 +203,9 @@ impl GameBoard for UltimateTTT {
         let mut available_microboards = Vec::new();
         let mut available_moves = Vec::new();
 
-        if let Some((row, col)) = self.next_microboard {
+        if let Some((row, col)) = self.next_microboard
+            && self.boards[row as usize][col as usize].get_status() == BoardStatus::InProgress
+        {
             available_microboards.push((row, col));
         } else {
             for i in 0..3 {
@@ -317,6 +344,30 @@ impl Debug for UltimateTTT {
     }
 }
 
+impl fmt::Display for UltimateTTT {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for i in 0..3 {
+            for row in 0..3 {
+                for j in 0..3 {
+                    for col in 0..3 {
+                        let cell = self.boards[i][j].grid[row][col];
+                        let symbol = match cell {
+                            Player::X => 'X',
+                            Player::O => 'O',
+                            Player::Empty => '-',
+                        };
+                        write!(f, "{} ", symbol)?;
+                    }
+                    write!(f, "  ")?;
+                }
+                writeln!(f)?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
 /// A single 3×3 Tic-Tac-Toe board within the Ultimate Tic-Tac-Toe game.
 ///
 /// Each cell can be empty (0), occupied by player 1 (X), or occupied by player 2 (O).
@@ -331,6 +382,14 @@ impl MicroBoard {
         MicroBoard {
             grid: [[Player::Empty; 3]; 3],
         }
+    }
+
+    pub fn get_grid(&self) -> &[[Player; 3]; 3] {
+        &self.grid
+    }
+
+    pub fn get_cell(&self, row: u8, col: u8) -> Player {
+        self.grid[row as usize][col as usize]
     }
 
     /// Returns the current status of this microboard.

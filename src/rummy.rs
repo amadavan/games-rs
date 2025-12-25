@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use crate::{
     GameBoard,
@@ -351,6 +351,17 @@ impl Rummy {
 impl Default for Rummy {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for Rummy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Current Player: {:?}", self.current_player)?;
+        writeln!(f, "Deck has {} cards", self.deck.len())?;
+        writeln!(f, "Discard pile has {} cards", self.discard.len())?;
+        writeln!(f, "Player 1 Hand: {:?}", self.hands[0])?;
+        writeln!(f, "Player 2 Hand: {:?}", self.hands[1])?;
+        Ok(())
     }
 }
 

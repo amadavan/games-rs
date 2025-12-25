@@ -23,7 +23,11 @@
 use derive_aliases::derive;
 use macros::enum_meta;
 use serde::{Deserialize, Serialize};
-use std::{collections::VecDeque, fmt::Debug, str::FromStr};
+use std::{
+    collections::VecDeque,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 use tinyvec::ArrayVec;
 
 /// Represents the suit of a playing card.
@@ -36,7 +40,7 @@ use tinyvec::ArrayVec;
 /// let suit = Suit::Hearts;
 /// assert_eq!(suit.symbol(), '♥');
 /// ```
-#[derive(..StdTraits, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize, Debug)]
 pub enum Suit {
     Hearts,
     Diamonds,
@@ -72,7 +76,7 @@ impl FromStr for Suit {
     }
 }
 
-impl Debug for Suit {
+impl Display for Suit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.symbol())
     }
@@ -90,7 +94,7 @@ impl Debug for Suit {
 /// let value: u8 = rank.into();
 /// assert_eq!(value, 14);
 /// ```
-#[derive(..StdTraits, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize, Debug)]
 pub enum Rank {
     Two,
     Three,
@@ -174,7 +178,7 @@ impl FromStr for Rank {
     }
 }
 
-impl Debug for Rank {
+impl Display for Rank {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.symbol())
     }
@@ -192,7 +196,7 @@ impl Debug for Rank {
 /// assert_eq!(card.rank(), &Rank::Ace);
 /// println!("{:?}", card); // Prints "A♠"
 /// ```
-#[derive(..StdTraits, Serialize, Deserialize)]
+#[derive(..StdTraits, Serialize, Deserialize, Debug)]
 pub struct Card {
     suit: Suit,
     rank: Rank,
@@ -221,7 +225,7 @@ impl Default for Card {
     }
 }
 
-impl Debug for Card {
+impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}", self.rank.symbol(), self.suit.symbol())
     }

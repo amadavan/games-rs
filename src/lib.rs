@@ -1,6 +1,9 @@
 #![allow(warnings)]
 
-use std::{fmt::Debug, str::FromStr};
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +36,16 @@ pub enum BoardStatus {
 }
 
 pub trait GameBoard:
-    Copy + Clone + std::hash::Hash + Eq + Default + Ord + Serialize + for<'de> Deserialize<'de> + Debug
+    Copy
+    + Clone
+    + std::hash::Hash
+    + Eq
+    + Default
+    + Ord
+    + Serialize
+    + for<'de> Deserialize<'de>
+    + Debug
+    + Display
 {
     type MoveType: Copy
         + Clone
@@ -43,7 +55,9 @@ pub trait GameBoard:
         + Serialize
         + for<'de> Deserialize<'de>
         + Debug
-        + FromStr;
+        + FromStr
+        + Send
+        + Sync;
 
     type PlayerType: Copy
         + Clone

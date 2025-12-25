@@ -247,3 +247,20 @@ impl fmt::Debug for ConnectFour {
         Ok(())
     }
 }
+
+impl fmt::Display for ConnectFour {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for row in (0..6).rev() {
+            for col in 0..7 {
+                let symbol = match self.grid[row][col] {
+                    Token::Empty => '.',
+                    Token::Red => 'R',
+                    Token::Yellow => 'Y',
+                };
+                write!(f, "{} ", symbol)?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
