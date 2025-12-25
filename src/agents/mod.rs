@@ -6,6 +6,7 @@
 
 pub mod monte_carlo_graph;
 pub mod scorer;
+pub mod train;
 
 use rand::Rng;
 use rand::seq::IndexedRandom;
@@ -72,7 +73,7 @@ impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
         let mut mv = None;
 
         while mv.is_none() {
-            println!("{:?}", board);
+            println!("{}", board);
             println!("Player {}, enter your move:", self.player);
 
             // Get the user input
