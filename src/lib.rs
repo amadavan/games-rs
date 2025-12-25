@@ -65,17 +65,19 @@ pub trait GameBoard:
     fn get_status(&self) -> BoardStatus;
 }
 
-pub fn play_game<Game: GameBoard, A1: agents::Agent<Game>, A2: agents::Agent<Game>>(
-    a1: &A1,
-    a2: &A2,
-) -> BoardStatus {
+pub fn play_game<Game: GameBoard>(
+    a1: &dyn agents::Agent<Game>,
+    a2: &dyn agents::Agent<Game>,
+) -> (BoardStatus, Vec<Game::MoveType>) {
     let mut game = Game::default();
-    let mut current_player = game.get_current_player();
+    let mut mvs = Vec::new();
 
     loop {
+        let current_player = game.get_current_player();
+
         let available_moves = game.get_available_moves();
         if available_moves.is_empty() {
-            return game.get_status();
+            return (game.get_status(), mvs);
         }
 
         let move_to_play = if current_player == Game::PlayerType::from(1) {
@@ -86,10 +88,10 @@ pub fn play_game<Game: GameBoard, A1: agents::Agent<Game>, A2: agents::Agent<Gam
 
         let mv = move_to_play;
         game.play(mv, current_player).unwrap();
-        current_player = game.get_current_player();
+        mvs.push(mv);
 
         if game.get_status() != BoardStatus::InProgress {
-            return game.get_status();
+            return (game.get_status(), mvs);
         }
     }
 }
