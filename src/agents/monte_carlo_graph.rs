@@ -151,11 +151,11 @@ impl From<EdgeWeight> for (usize, usize, usize) {
 /// # Examples
 /// ```
 /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
-/// use games_rs::BoardStatus;
+/// use games_rs::GameStatus;
 ///
 /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
 /// let path = vec![0, 1, 2];
-/// graph.back_propogate(path, BoardStatus::Win(0));
+/// graph.back_propogate(path, GameStatus::Win(0));
 ///
 /// assert!(graph.contains_node(&1));
 /// assert!(graph.contains_edge(&0, &1));
@@ -203,11 +203,11 @@ where
     /// # Examples
     /// ```
     /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
-    /// use games_rs::BoardStatus;
+    /// use games_rs::GameStatus;
     ///
     /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
-    /// graph.back_propogate(vec![0, 1], BoardStatus::Win(0));
-    /// graph.back_propogate(vec![0, 2], BoardStatus::Draw);
+    /// graph.back_propogate(vec![0, 1], GameStatus::Win(0));
+    /// graph.back_propogate(vec![0, 2], GameStatus::Draw);
     ///
     /// let outcomes = graph.get_aggregate_outcomes(&0);
     /// assert_eq!(outcomes.simulations(), 2);
@@ -262,10 +262,10 @@ where
     /// # Examples
     /// ```
     /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
-    /// use games_rs::BoardStatus;
+    /// use games_rs::GameStatus;
     ///
     /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
-    /// graph.back_propogate(vec![0, 1], BoardStatus::Win(0));
+    /// graph.back_propogate(vec![0, 1], GameStatus::Win(0));
     ///
     /// let weight = graph.edge_weight(0, 1).unwrap();
     /// assert_eq!(weight.wins(), 1);
@@ -293,10 +293,10 @@ where
     /// # Examples
     /// ```
     /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
-    /// use games_rs::BoardStatus;
+    /// use games_rs::GameStatus;
     ///
     /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
-    /// graph.back_propogate(vec![0, 1, 2], BoardStatus::Win(0));
+    /// graph.back_propogate(vec![0, 1, 2], GameStatus::Win(0));
     ///
     /// assert!(graph.contains_edge(&0, &1));
     /// assert!(graph.contains_edge(&1, &2));
@@ -336,10 +336,10 @@ where
     /// # Examples
     /// ```
     /// use games_rs::agents::monte_carlo_graph::MonteCarloGraph;
-    /// use games_rs::BoardStatus;
+    /// use games_rs::GameStatus;
     ///
     /// let mut graph: MonteCarloGraph<u32> = MonteCarloGraph::new();
-    /// graph.back_propogate(vec![0, 1, 2], BoardStatus::Win(0));
+    /// graph.back_propogate(vec![0, 1, 2], GameStatus::Win(0));
     /// assert!(graph.validate());
     /// ```
     pub fn validate(&self) -> bool {
