@@ -14,7 +14,7 @@ use petgraph::prelude::DiGraphMap;
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 
-use crate::BoardStatus;
+use crate::{Game, GameStatus, PlayThrough, agents::train::TrainableComponent};
 
 use derive_aliases::derive;
 
@@ -302,7 +302,7 @@ where
     /// assert!(graph.contains_edge(&1, &2));
     /// assert!(graph.validate());
     /// ```
-    pub fn back_propogate(&mut self, path: Vec<N>, state: BoardStatus) {
+    pub fn back_propogate(&mut self, path: Vec<N>, state: GameStatus) {
         for i in (1..path.len()) {
             let from = path[i - 1];
             let to = path[i];
@@ -318,10 +318,10 @@ where
             }
         }
 
-        if state != BoardStatus::InProgress || self.contains_node(&path[path.len() - 1]) {
+        if state != GameStatus::InProgress || self.contains_node(&path[path.len() - 1]) {
             let weight: EdgeWeight = match state {
-                BoardStatus::Win(_) => (1, 0, 0).into(),
-                BoardStatus::Draw => (0, 0, 1).into(),
+                GameStatus::Win(_) => (1, 0, 0).into(),
+                GameStatus::Draw => (0, 0, 1).into(),
                 _ => panic!("Invalid board status"),
             };
 
@@ -387,6 +387,23 @@ where
     }
 }
 
+impl<G: Game> TrainableComponent<G> for MonteCarloGraph<G> {
+    const name: &'static str = "MonteCarloGraph";
+
+    fn train(&mut self, sample: &PlayThrough<G>, _verbose: bool) -> () {
+        let mut path = Vec::new();
+        path.push(self.root);
+        let mut game = G::default();
+
+        for (player, mv) in &sample.moves {
+            game.play(*mv, *player).unwrap();
+            path.push(game.clone());
+        }
+
+        self.back_propogate(path, *sample.get_result());
+    }
+}
+
 mod test {
     #[test]
     fn test_monte_carlo_graph_serialization() {
@@ -426,10 +443,10 @@ mod test {
     #[test]
     fn test_back_propogate() {
         use super::MonteCarloGraph;
-        use crate::BoardStatus;
+        use crate::GameStatus;
         let mut mcg: MonteCarloGraph<u32> = MonteCarloGraph::new();
         let path = vec![0, 1, 2, 3];
-        mcg.back_propogate(path.clone(), BoardStatus::Win(0));
+        mcg.back_propogate(path.clone(), GameStatus::Win(0));
 
         assert!(mcg.contains_node(&0));
         assert!(mcg.contains_node(&1));
@@ -448,14 +465,14 @@ mod test {
     #[test]
     fn test_back_propogate_multi() {
         use super::MonteCarloGraph;
-        use crate::BoardStatus;
+        use crate::GameStatus;
         let mut mcg: MonteCarloGraph<u32> = MonteCarloGraph::new();
         let path1 = vec![0, 1, 2, 3];
-        mcg.back_propogate(path1.clone(), BoardStatus::Win(0));
+        mcg.back_propogate(path1.clone(), GameStatus::Win(0));
         let path2 = vec![0, 1, 4, 5, 6];
-        mcg.back_propogate(path2.clone(), BoardStatus::Win(0));
+        mcg.back_propogate(path2.clone(), GameStatus::Win(0));
         let path3 = vec![0, 9, 4, 11, 12];
-        mcg.back_propogate(path3.clone(), BoardStatus::Win(0));
+        mcg.back_propogate(path3.clone(), GameStatus::Win(0));
 
         assert_eq!(mcg.edge_weight(0, 1), Some(&(1, 2, 0).into()));
         assert_eq!(mcg.edge_weight(1, 2), Some(&(0, 1, 0).into()));

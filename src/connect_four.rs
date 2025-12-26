@@ -8,7 +8,7 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{BoardStatus, GameBoard};
+use crate::{Game, GameStatus};
 use derive_aliases::derive;
 
 /// Represents a token in the Connect Four game.
@@ -87,7 +87,8 @@ impl ConnectFour {
     }
 }
 
-impl GameBoard for ConnectFour {
+impl Game for ConnectFour {
+    const name: &'static str = "Connect Four";
     type MoveType = usize;
     type PlayerType = Token;
 
@@ -159,8 +160,8 @@ impl GameBoard for ConnectFour {
     ///
     /// Checks for four connected tokens in any direction (horizontal, vertical, or diagonal).
     /// Returns `BoardStatus::Draw` if the board is full with no winner.
-    fn get_status(&self) -> BoardStatus {
-        let mut status = BoardStatus::InProgress;
+    fn get_status(&self) -> GameStatus {
+        let mut status = GameStatus::InProgress;
 
         // Check columns for 4 in a row
         for col in 0..7 {
@@ -170,7 +171,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col]
                     && self.grid[row][col] == self.grid[row + 3][col]
                 {
-                    return BoardStatus::Win(self.grid[row][col].into());
+                    return GameStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -183,7 +184,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row][col + 2]
                     && self.grid[row][col] == self.grid[row][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].into());
+                    return GameStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -196,7 +197,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col + 2]
                     && self.grid[row][col] == self.grid[row + 3][col + 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].into());
+                    return GameStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -207,7 +208,7 @@ impl GameBoard for ConnectFour {
                     && self.grid[row][col] == self.grid[row + 2][col - 2]
                     && self.grid[row][col] == self.grid[row + 3][col - 3]
                 {
-                    return BoardStatus::Win(self.grid[row][col].into());
+                    return GameStatus::Win(self.grid[row][col].into());
                 }
             }
         }
@@ -218,7 +219,7 @@ impl GameBoard for ConnectFour {
             .iter()
             .all(|row| row.iter().all(|&cell| cell != Token::Empty))
         {
-            status = BoardStatus::Draw;
+            status = GameStatus::Draw;
         }
 
         status

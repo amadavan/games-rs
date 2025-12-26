@@ -29,13 +29,13 @@ mod derive_alias {
 use derive_aliases::derive;
 
 #[derive(..StdTraits)]
-pub enum BoardStatus {
+pub enum GameStatus {
     InProgress,
     Win(u8),
     Draw,
 }
 
-pub trait GameBoard:
+pub trait Game:
     Copy
     + Clone
     + std::hash::Hash
@@ -47,6 +47,8 @@ pub trait GameBoard:
     + Debug
     + Display
 {
+    const name: &'static str;
+
     type MoveType: Copy
         + Clone
         + std::hash::Hash
@@ -68,7 +70,9 @@ pub trait GameBoard:
         + for<'de> Deserialize<'de>
         + Debug
         + From<u8>
-        + Into<u8>;
+        + Into<u8>
+        + Send
+        + Sync;
 
     fn get_current_player(&self) -> Self::PlayerType;
 
@@ -76,25 +80,82 @@ pub trait GameBoard:
 
     fn play(&mut self, mv: Self::MoveType, player: Self::PlayerType) -> Result<(), String>;
 
-    fn get_status(&self) -> BoardStatus;
+    fn get_status(&self) -> GameStatus;
+
+    fn move_message(&self) -> &str {
+        ""
+    }
 }
 
-pub fn play_game<Game: GameBoard>(
-    a1: &dyn agents::Agent<Game>,
-    a2: &dyn agents::Agent<Game>,
-) -> (BoardStatus, Vec<Game::MoveType>) {
-    let mut game = Game::default();
-    let mut mvs = Vec::new();
+/// A recorded game sample containing the sequence of moves and final result.
+pub struct PlayThrough<G: Game> {
+    result: GameStatus,
+    moves: Vec<(<G as Game>::PlayerType, <G as Game>::MoveType)>,
+}
+
+impl<G: Game> PlayThrough<G> {
+    pub fn new(
+        result: GameStatus,
+        moves: Vec<(<G as Game>::PlayerType, <G as Game>::MoveType)>,
+    ) -> Self {
+        PlayThrough { result, moves }
+    }
+
+    /// Returns the result of the game.
+    pub fn get_result(&self) -> &GameStatus {
+        &self.result
+    }
+
+    /// Returns the sequence of moves made during the game.
+    pub fn get_moves(&self) -> &Vec<(<G as Game>::PlayerType, <G as Game>::MoveType)> {
+        &self.moves
+    }
+
+    pub fn set_result(&mut self, result: GameStatus) -> () {
+        self.result = result;
+    }
+
+    pub fn add_move(&mut self, player: <G as Game>::PlayerType, mv: <G as Game>::MoveType) -> () {
+        self.moves.push((player, mv));
+    }
+}
+
+impl<G: Game>
+    From<(
+        GameStatus,
+        Vec<(<G as Game>::PlayerType, <G as Game>::MoveType)>,
+    )> for PlayThrough<G>
+where
+    G: Game,
+{
+    fn from(
+        value: (
+            GameStatus,
+            Vec<(<G as Game>::PlayerType, <G as Game>::MoveType)>,
+        ),
+    ) -> Self {
+        PlayThrough {
+            result: value.0,
+            moves: value.1,
+        }
+    }
+}
+
+/// Plays a single game between two agents and returns the playthrough.
+pub fn play_game<G: Game>(a1: &dyn agents::Agent<G>, a2: &dyn agents::Agent<G>) -> PlayThrough<G> {
+    let mut game = G::default();
+    let mut playthrough: PlayThrough<G> = PlayThrough::new(GameStatus::InProgress, Vec::new());
 
     loop {
         let current_player = game.get_current_player();
 
         let available_moves = game.get_available_moves();
         if available_moves.is_empty() {
-            return (game.get_status(), mvs);
+            playthrough.set_result(GameStatus::Draw);
+            return playthrough;
         }
 
-        let move_to_play = if current_player == Game::PlayerType::from(1) {
+        let move_to_play = if current_player == G::PlayerType::from(1) {
             a1.get_move(&game)
         } else {
             a2.get_move(&game)
@@ -102,10 +163,11 @@ pub fn play_game<Game: GameBoard>(
 
         let mv = move_to_play;
         game.play(mv, current_player).unwrap();
-        mvs.push(mv);
+        playthrough.add_move(current_player, mv);
 
-        if game.get_status() != BoardStatus::InProgress {
-            return (game.get_status(), mvs);
+        if game.get_status() != GameStatus::InProgress {
+            playthrough.set_result(game.get_status());
+            return playthrough;
         }
     }
 }

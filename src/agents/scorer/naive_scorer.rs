@@ -1,15 +1,15 @@
 use crate::{
-    GameBoard,
+    Game, GameStatus,
     agents::ScoreFunction,
     connect_four::{ConnectFour, Token},
-    ultimate_ttt::UltimateTTT,
+    ultimate_ttt::{MicroBoard, Player, UltimateTTT},
 };
 
-pub struct NaiveScorer<Game: GameBoard> {
-    _marker: std::marker::PhantomData<Game>,
+pub struct NaiveScorer<G: Game> {
+    _marker: std::marker::PhantomData<G>,
 }
 
-impl<Game: GameBoard> NaiveScorer<Game> {
+impl<G: Game> NaiveScorer<G> {
     /// Creates a new NaiveScorer agent for Connect Four.
     pub fn new() -> Self {
         NaiveScorer {
@@ -31,8 +31,8 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
     fn score(
         &self,
         board: &ConnectFour,
-        mv: &<ConnectFour as GameBoard>::MoveType,
-        player: <ConnectFour as GameBoard>::PlayerType,
+        mv: &<ConnectFour as Game>::MoveType,
+        player: <ConnectFour as Game>::PlayerType,
     ) -> f32 {
         let grid = board.get_grid();
 
@@ -53,7 +53,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 && grid[row][c] == grid[row][c + 3]
             {
                 if grid[row][c] != player.into() {
-                    score -= 120.0;
+                    score -= 100.0;
                 } else {
                     score += 100.0
                 }
@@ -67,7 +67,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 && grid[r][*col] == grid[r + 3][*col]
             {
                 if grid[r][*col] != player.into() {
-                    score -= 120.0;
+                    score -= 100.0;
                 } else {
                     score += 100.0
                 }
@@ -82,7 +82,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                     && grid[r][c] == grid[r + 3][c + 3]
                 {
                     if grid[r][c] != player.into() {
-                        score -= 120.0;
+                        score -= 100.0;
                     } else {
                         score += 100.0
                     }
@@ -98,7 +98,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                     && grid[r][c] == grid[r + 3][c - 3]
                 {
                     if grid[r][c] != player.into() {
-                        score -= 120.0;
+                        score -= 100.0;
                     } else {
                         score += 100.0;
                     }
@@ -113,7 +113,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 && grid[row][c] == grid[row][c + 2]
             {
                 if grid[row][c] != player.into() {
-                    score -= 12.0;
+                    score -= 10.0;
                 } else {
                     score += 10.0
                 }
@@ -126,7 +126,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                 && grid[r][*col] == grid[r + 2][*col]
             {
                 if grid[r][*col] != player.into() {
-                    score -= 12.0;
+                    score -= 10.0;
                 } else {
                     score += 10.0
                 }
@@ -140,7 +140,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                     && grid[r][c] == grid[r + 2][c + 2]
                 {
                     if grid[r][c] != player.into() {
-                        score -= 12.0;
+                        score -= 10.0;
                     } else {
                         score += 10.0
                     }
@@ -155,7 +155,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
                     && grid[r][c] == grid[r + 2][c - 2]
                 {
                     if grid[r][c] != player.into() {
-                        score -= 12.0;
+                        score -= 10.0;
                     } else {
                         score += 10.0
                     }
@@ -167,7 +167,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
         for c in 0..6 {
             if grid[row][c] != Token::Empty && grid[row][c] == grid[row][c + 1] {
                 if grid[row][c] != player.into() {
-                    score -= 2.0;
+                    score -= 1.0;
                 } else {
                     score += 1.0
                 }
@@ -177,7 +177,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
         for r in 0..5 {
             if grid[r][*col] != Token::Empty && grid[r][*col] == grid[r + 1][*col] {
                 if grid[r][*col] != player.into() {
-                    score -= 2.0;
+                    score -= 1.0;
                 } else {
                     score += 1.0
                 }
@@ -188,7 +188,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             for c in 0..6 {
                 if grid[r][c] != Token::Empty && grid[r][c] == grid[r + 1][c + 1] {
                     if grid[r][c] != player.into() {
-                        score -= 2.0;
+                        score -= 1.0;
                     } else {
                         score += 1.0
                     }
@@ -200,7 +200,7 @@ impl ScoreFunction<ConnectFour> for NaiveScorer<ConnectFour> {
             for c in 1..7 {
                 if grid[r][c] != Token::Empty && grid[r][c] == grid[r + 1][c - 1] {
                     if grid[r][c] != player.into() {
-                        score -= 2.0;
+                        score -= 1.0;
                     } else {
                         score += 1.0
                     }
@@ -225,8 +225,8 @@ impl ScoreFunction<UltimateTTT> for NaiveScorer<UltimateTTT> {
     fn score(
         &self,
         board: &UltimateTTT,
-        mv: &<UltimateTTT as GameBoard>::MoveType,
-        player: <UltimateTTT as GameBoard>::PlayerType,
+        mv: &<UltimateTTT as Game>::MoveType,
+        player: <UltimateTTT as Game>::PlayerType,
     ) -> f32 {
         // Implement a simple heuristic to score the board
         // This is a placeholder implementation

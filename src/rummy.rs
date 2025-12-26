@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use crate::{
-    GameBoard,
+    Game,
     cards::{Card, Deck},
 };
 use derive_aliases::derive;
@@ -79,15 +79,16 @@ pub struct Rummy {
     current_player: Player,
 }
 
-impl GameBoard for Rummy {
+impl Game for Rummy {
+    const name: &'static str = "Rummy";
     type MoveType = Action;
     type PlayerType = Player;
 
-    fn get_status(&self) -> crate::BoardStatus {
+    fn get_status(&self) -> crate::GameStatus {
         if self.deck.is_empty() && self.discard.is_empty() {
-            crate::BoardStatus::Draw
+            crate::GameStatus::Draw
         } else {
-            crate::BoardStatus::InProgress
+            crate::GameStatus::InProgress
         }
     }
 

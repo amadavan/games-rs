@@ -13,13 +13,13 @@ use rand::seq::IndexedRandom;
 use std::cmp::max;
 use std::cmp::min;
 
-use crate::{BoardStatus, GameBoard, agents::monte_carlo_graph::MonteCarloGraph};
+use crate::{Game, GameStatus, agents::monte_carlo_graph::MonteCarloGraph};
 
 /// Trait for game-playing agents.
 ///
 /// Agents can select moves and optionally receive feedback about game outcomes
 /// to improve their strategy.
-pub trait Agent<Game: GameBoard> {
+pub trait Agent<G: Game> {
     /// Selects a move for the current board state.
     ///
     /// # Arguments
@@ -27,32 +27,20 @@ pub trait Agent<Game: GameBoard> {
     ///
     /// # Returns
     /// The selected move for the current board state.
-    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType;
-
-    /// Notifies the agent about game progression and outcome.
-    ///
-    /// This method is called to provide feedback that learning agents can use
-    /// to update their strategies.
-    ///
-    /// # Arguments
-    /// * `_moves` - The sequence of (player, board state) pairs representing the game history
-    /// * `_status` - The final game status (win, draw, or in progress)
-    fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
-        ()
-    }
+    fn get_move(&self, board: &G) -> <G as Game>::MoveType;
 }
 
 /// An interactive agent that prompts a human player for moves via stdin.
 ///
 /// This agent displays the current board state and requests move input from
 /// the user through the console.
-pub struct PlayerAgent<Game: GameBoard> {
+pub struct PlayerAgent<G: Game> {
     /// The player number this agent represents
     pub player: u8,
-    _marker: std::marker::PhantomData<Game>,
+    _marker: std::marker::PhantomData<G>,
 }
 
-impl<Game: GameBoard> PlayerAgent<Game> {
+impl<G: Game> PlayerAgent<G> {
     /// Creates a new human player agent.
     ///
     /// # Arguments
@@ -65,11 +53,11 @@ impl<Game: GameBoard> PlayerAgent<Game> {
     }
 }
 
-impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
+impl<G: Game> Agent<G> for PlayerAgent<G> {
     /// Prompts the human player to enter a move via stdin.
     ///
     /// Displays the board and repeatedly requests input until a valid move is entered.
-    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
+    fn get_move(&self, board: &G) -> <G as Game>::MoveType {
         let mut mv = None;
 
         while mv.is_none() {
@@ -79,7 +67,7 @@ impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
             // Get the user input
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).unwrap();
-            let parsed_move: Result<<Game as GameBoard>::MoveType, _> = input.trim().parse();
+            let parsed_move: Result<<G as Game>::MoveType, _> = input.trim().parse();
 
             if let Ok(parsed_move) = parsed_move
                 && board.get_available_moves().contains(&parsed_move)
@@ -97,11 +85,11 @@ impl<Game: GameBoard> Agent<Game> for PlayerAgent<Game> {
 /// An agent that selects moves uniformly at random from available moves.
 ///
 /// This agent provides a baseline for comparison with more sophisticated strategies.
-pub struct RandomAgent<Game: GameBoard> {
-    _marker: std::marker::PhantomData<Game>,
+pub struct RandomAgent<G: Game> {
+    _marker: std::marker::PhantomData<G>,
 }
 
-impl<Game: GameBoard> RandomAgent<Game> {
+impl<G: Game> RandomAgent<G> {
     /// Creates a new random agent.
     pub fn new() -> Self {
         RandomAgent {
@@ -110,9 +98,9 @@ impl<Game: GameBoard> RandomAgent<Game> {
     }
 }
 
-impl<Game: GameBoard> Agent<Game> for RandomAgent<Game> {
+impl<G: Game> Agent<G> for RandomAgent<G> {
     /// Selects a random move from the available moves.
-    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
+    fn get_move(&self, board: &G) -> <G as Game>::MoveType {
         let available_moves = board.get_available_moves();
         let mut rng = rand::rng();
         available_moves.choose(&mut rng).unwrap().clone()
@@ -124,11 +112,11 @@ impl<Game: GameBoard> Agent<Game> for RandomAgent<Game> {
 /// This agent maintains a graph of game states and transitions, learning from game outcomes
 /// to make increasingly better decisions. It uses the UCT formula to balance exploration
 /// and exploitation when selecting moves.
-pub struct MonteCarloGraphSearch<Game: GameBoard> {
-    graph: MonteCarloGraph<Game>,
+pub struct MonteCarloGraphSearch<G: Game> {
+    graph: MonteCarloGraph<G>,
 }
 
-impl<Game: GameBoard> MonteCarloGraphSearch<Game> {
+impl<G: Game> MonteCarloGraphSearch<G> {
     /// Creates a new Monte Carlo Graph Search agent with an empty graph.
     pub fn new() -> Self {
         MonteCarloGraphSearch {
@@ -142,12 +130,12 @@ impl<Game: GameBoard> MonteCarloGraphSearch<Game> {
     ///
     /// # Arguments
     /// * `graph` - A pre-existing Monte Carlo graph
-    pub fn from_graph(graph: MonteCarloGraph<Game>) -> Self {
+    pub fn from_graph(graph: MonteCarloGraph<G>) -> Self {
         MonteCarloGraphSearch { graph }
     }
 }
 
-impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
+impl<G: Game> Agent<G> for MonteCarloGraphSearch<G> {
     /// Selects a move using the UCT (Upper Confidence bounds applied to Trees) formula.
     ///
     /// For each available move, calculates a UCT value that balances:
@@ -158,7 +146,7 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
     /// where w = wins, n = simulations for this move, N = total simulations from resulting state.
     ///
     /// Returns a random choice among the highest-valued moves.
-    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
+    fn get_move(&self, board: &G) -> <G as Game>::MoveType {
         let available_moves = board.get_available_moves();
 
         let values = available_moves
@@ -199,41 +187,23 @@ impl<Game: GameBoard> Agent<Game> for MonteCarloGraphSearch<Game> {
 
         *choice.0
     }
-
-    /// Updates the graph with game outcome information.
-    ///
-    /// Propagates win/loss statistics backward through the game state graph,
-    /// allowing the agent to learn from the game's result.
-    ///
-    /// # Arguments
-    /// * `_moves` - The sequence of (player, board state) pairs from the game
-    /// * `_status` - The final game status (win or draw)
-    fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
-        let path = _moves.iter().map(|(_, b)| b.clone()).collect();
-        self.graph.back_propogate(path, _status);
-    }
 }
 
-pub trait ScoreFunction<Game: GameBoard> {
-    fn score(
-        &self,
-        board: &Game,
-        mv: &<Game as GameBoard>::MoveType,
-        player: Game::PlayerType,
-    ) -> f32;
+pub trait ScoreFunction<G: Game> {
+    fn score(&self, board: &G, mv: &<G as Game>::MoveType, player: G::PlayerType) -> f32;
 
-    fn update(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
+    fn update(&mut self, _moves: &Vec<(u8, G)>, _status: GameStatus) -> () {
         ()
     }
 }
 
-pub struct MinimaxAgent<Game: GameBoard, ScoreFn: ScoreFunction<Game>> {
+pub struct MinimaxAgent<G: Game, ScoreFn: ScoreFunction<G>> {
     depth: usize,
     score_fn: ScoreFn,
-    _marker: std::marker::PhantomData<Game>,
+    _marker: std::marker::PhantomData<G>,
 }
 
-impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> {
+impl<G: Game, ScoreFn: ScoreFunction<G>> MinimaxAgent<G, ScoreFn> {
     pub fn new(depth: usize, score_fn: ScoreFn) -> Self {
         MinimaxAgent {
             depth,
@@ -244,14 +214,14 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> 
 
     fn alpha_beta(
         &self,
-        board: &Game,
-        mv: Game::MoveType,
+        board: &G,
+        mv: G::MoveType,
         depth: usize,
         alpha: f32,
         beta: f32,
-        player: Game::PlayerType,
+        player: G::PlayerType,
     ) -> f32 {
-        if depth == 0 || board.get_status() != BoardStatus::InProgress {
+        if depth == 0 || board.get_status() != GameStatus::InProgress {
             let sign = if player == board.get_current_player() {
                 1.0
             } else {
@@ -293,8 +263,8 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> MinimaxAgent<Game, ScoreFn> 
     }
 }
 
-impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> Agent<Game> for MinimaxAgent<Game, ScoreFn> {
-    fn get_move(&self, board: &Game) -> <Game as GameBoard>::MoveType {
+impl<G: Game, ScoreFn: ScoreFunction<G>> Agent<G> for MinimaxAgent<G, ScoreFn> {
+    fn get_move(&self, board: &G) -> <G as Game>::MoveType {
         let available_moves = board.get_available_moves();
 
         let mut best_move = available_moves[0];
@@ -321,9 +291,5 @@ impl<Game: GameBoard, ScoreFn: ScoreFunction<Game>> Agent<Game> for MinimaxAgent
         }
 
         best_move
-    }
-
-    fn notify(&mut self, _moves: &Vec<(u8, Game)>, _status: BoardStatus) -> () {
-        self.score_fn.update(_moves, _status);
     }
 }

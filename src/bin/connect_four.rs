@@ -1,10 +1,11 @@
 use clap::Parser;
 use games_rs::{
+    GameStatus, PlayThrough,
     agents::{Agent, MinimaxAgent, PlayerAgent, RandomAgent, scorer::naive_scorer::NaiveScorer},
     connect_four::ConnectFour,
 };
 
-type Game = ConnectFour;
+type G = ConnectFour;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum AvailableAgents {
@@ -33,31 +34,31 @@ struct Args {
 }
 
 fn main() {
-    let ai_player1: Box<dyn Agent<Game>> = match Args::parse().player1 {
+    let ai_player1: Box<dyn Agent<G>> = match Args::parse().player1 {
         AvailableAgents::Minimax => Box::new({
-            let scorer = NaiveScorer::<Game>::new();
-            MinimaxAgent::<Game, _>::new(4, scorer)
+            let scorer = NaiveScorer::<G>::new();
+            MinimaxAgent::<G, _>::new(4, scorer)
         }),
-        AvailableAgents::MCGS => Box::new(games_rs::agents::MonteCarloGraphSearch::<Game>::new()),
-        AvailableAgents::Player => Box::new(PlayerAgent::<Game>::new(1)),
-        AvailableAgents::Random => Box::new(RandomAgent::<Game>::new()),
+        AvailableAgents::MCGS => Box::new(games_rs::agents::MonteCarloGraphSearch::<G>::new()),
+        AvailableAgents::Player => Box::new(PlayerAgent::<G>::new(1)),
+        AvailableAgents::Random => Box::new(RandomAgent::<G>::new()),
     };
 
-    let ai_player2: Box<dyn Agent<Game>> = match Args::parse().player2 {
+    let ai_player2: Box<dyn Agent<G>> = match Args::parse().player2 {
         AvailableAgents::Minimax => Box::new({
-            let scorer = NaiveScorer::<Game>::new();
-            MinimaxAgent::<Game, _>::new(4, scorer)
+            let scorer = NaiveScorer::<G>::new();
+            MinimaxAgent::<G, _>::new(4, scorer)
         }),
-        AvailableAgents::MCGS => Box::new(games_rs::agents::MonteCarloGraphSearch::<Game>::new()),
-        AvailableAgents::Player => Box::new(PlayerAgent::<Game>::new(2)),
-        AvailableAgents::Random => Box::new(RandomAgent::<Game>::new()),
+        AvailableAgents::MCGS => Box::new(games_rs::agents::MonteCarloGraphSearch::<G>::new()),
+        AvailableAgents::Player => Box::new(PlayerAgent::<G>::new(2)),
+        AvailableAgents::Random => Box::new(RandomAgent::<G>::new()),
     };
 
-    let (result, _) = games_rs::play_game::<Game>(ai_player1.as_ref(), ai_player2.as_ref());
+    let playthrough = games_rs::play_game::<G>(ai_player1.as_ref(), ai_player2.as_ref());
 
-    match result {
-        games_rs::BoardStatus::Win(player) => println!("Player {} wins!", player),
-        games_rs::BoardStatus::Draw => println!("The game is a draw!"),
-        games_rs::BoardStatus::InProgress => println!("The game is still in progress!"),
+    match playthrough.get_result() {
+        GameStatus::Win(player) => println!("Player {} wins!", player),
+        GameStatus::Draw => println!("The game is a draw!"),
+        GameStatus::InProgress => println!("The game is still in progress!"),
     }
 }

@@ -11,8 +11,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::BoardStatus;
-use crate::GameBoard;
+use crate::{Game, GameStatus};
 
 use derive_aliases::derive;
 
@@ -162,7 +161,8 @@ impl UltimateTTT {
     }
 }
 
-impl GameBoard for UltimateTTT {
+impl Game for UltimateTTT {
+    const name: &'static str = "Ultimate Tic-Tac-Toe";
     type MoveType = Move;
     type PlayerType = Player;
 
@@ -204,13 +204,13 @@ impl GameBoard for UltimateTTT {
         let mut available_moves = Vec::new();
 
         if let Some((row, col)) = self.next_microboard
-            && self.boards[row as usize][col as usize].get_status() == BoardStatus::InProgress
+            && self.boards[row as usize][col as usize].get_status() == GameStatus::InProgress
         {
             available_microboards.push((row, col));
         } else {
             for i in 0..3 {
                 for j in 0..3 {
-                    if self.boards[i][j].get_status() == BoardStatus::InProgress {
+                    if self.boards[i][j].get_status() == GameStatus::InProgress {
                         available_microboards.push((i as u8, j as u8));
                     }
                 }
@@ -248,7 +248,7 @@ impl GameBoard for UltimateTTT {
     /// # Side Effects
     /// Updates `next_microboard` to direct the next player to the appropriate board.
     fn play(&mut self, mv: Self::MoveType, player: Self::PlayerType) -> Result<(), String> {
-        if self.get_status() != BoardStatus::InProgress {
+        if self.get_status() != GameStatus::InProgress {
             return Err("Game is already over".to_string());
         }
 
@@ -276,16 +276,16 @@ impl GameBoard for UltimateTTT {
     ///
     /// Checks for wins by examining if three microboards in a row have been won by the same player.
     /// Returns `BoardStatus::Draw` if no moves are available and no player has won.
-    fn get_status(&self) -> BoardStatus {
+    fn get_status(&self) -> GameStatus {
         // Check rows and columns
         for i in 0..3 {
-            if self.boards[i][0].get_status() != BoardStatus::InProgress
+            if self.boards[i][0].get_status() != GameStatus::InProgress
                 && self.boards[i][0].get_status() == self.boards[i][1].get_status()
                 && self.boards[i][1].get_status() == self.boards[i][2].get_status()
             {
                 return self.boards[i][0].get_status();
             }
-            if self.boards[0][i].get_status() != BoardStatus::InProgress
+            if self.boards[0][i].get_status() != GameStatus::InProgress
                 && self.boards[0][i].get_status() == self.boards[1][i].get_status()
                 && self.boards[1][i].get_status() == self.boards[2][i].get_status()
             {
@@ -293,13 +293,13 @@ impl GameBoard for UltimateTTT {
             }
         }
         // Check diagonals
-        if self.boards[0][0].get_status() != BoardStatus::InProgress
+        if self.boards[0][0].get_status() != GameStatus::InProgress
             && self.boards[0][0].get_status() == self.boards[1][1].get_status()
             && self.boards[1][1].get_status() == self.boards[2][2].get_status()
         {
             return self.boards[0][0].get_status();
         }
-        if self.boards[0][2].get_status() != BoardStatus::InProgress
+        if self.boards[0][2].get_status() != GameStatus::InProgress
             && self.boards[0][2].get_status() == self.boards[1][1].get_status()
             && self.boards[1][1].get_status() == self.boards[2][0].get_status()
         {
@@ -307,10 +307,10 @@ impl GameBoard for UltimateTTT {
         }
 
         if self.get_available_moves().is_empty() {
-            return BoardStatus::Draw;
+            return GameStatus::Draw;
         }
 
-        BoardStatus::InProgress
+        GameStatus::InProgress
     }
 }
 
@@ -396,20 +396,20 @@ impl MicroBoard {
     ///
     /// Checks for wins (three in a row) and returns the winning player.
     /// Returns `BoardStatus::Draw` if the board is full with no winner.
-    pub fn get_status(&self) -> BoardStatus {
+    pub fn get_status(&self) -> GameStatus {
         // Check rows and columns for win
         for i in 0..3 {
             if self.grid[i][0] != Player::Empty
                 && self.grid[i][0] == self.grid[i][1]
                 && self.grid[i][1] == self.grid[i][2]
             {
-                return BoardStatus::Win(self.grid[i][0].into());
+                return GameStatus::Win(self.grid[i][0].into());
             }
             if self.grid[0][i] != Player::Empty
                 && self.grid[0][i] == self.grid[1][i]
                 && self.grid[1][i] == self.grid[2][i]
             {
-                return BoardStatus::Win(self.grid[0][i].into());
+                return GameStatus::Win(self.grid[0][i].into());
             }
         }
         // Check diagonals
@@ -417,20 +417,20 @@ impl MicroBoard {
             && self.grid[0][0] == self.grid[1][1]
             && self.grid[1][1] == self.grid[2][2]
         {
-            return BoardStatus::Win(self.grid[0][0].into());
+            return GameStatus::Win(self.grid[0][0].into());
         }
         if self.grid[0][2] != Player::Empty
             && self.grid[0][2] == self.grid[1][1]
             && self.grid[1][1] == self.grid[2][0]
         {
-            return BoardStatus::Win(self.grid[0][2].into());
+            return GameStatus::Win(self.grid[0][2].into());
         }
 
         if self.get_available_moves().is_empty() {
-            return BoardStatus::Draw;
+            return GameStatus::Draw;
         }
 
-        BoardStatus::InProgress
+        GameStatus::InProgress
     }
 
     /// Returns all empty cells in this microboard as (row, col) tuples.

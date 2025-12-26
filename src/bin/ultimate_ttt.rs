@@ -1,10 +1,11 @@
 use clap::Parser;
 use games_rs::{
+    GameStatus, PlayThrough,
     agents::{Agent, MinimaxAgent, PlayerAgent, RandomAgent, scorer::naive_scorer::NaiveScorer},
     ultimate_ttt::UltimateTTT,
 };
 
-type Game = UltimateTTT;
+type G = UltimateTTT;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum AvailableAgents {
@@ -50,11 +51,11 @@ fn main() {
         AvailableAgents::Random => Box::new(RandomAgent::<Game>::new()),
     };
 
-    let (result, _) = games_rs::play_game::<Game>(ai_player1.as_ref(), ai_player2.as_ref());
+    let playthrough = games_rs::play_game::<Game>(ai_player1.as_ref(), ai_player2.as_ref());
 
-    match result {
-        games_rs::BoardStatus::Win(player) => println!("Player {} wins!", player),
-        games_rs::BoardStatus::Draw => println!("The game is a draw!"),
-        games_rs::BoardStatus::InProgress => println!("The game is still in progress!"),
+    match playthrough.get_result() {
+        GameStatus::Win(player) => println!("Player {} wins!", player),
+        GameStatus::Draw => println!("The game is a draw!"),
+        GameStatus::InProgress => println!("The game is still in progress!"),
     }
 }
